@@ -25,7 +25,7 @@ struct togooApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SplashScreen() // Replace ContentView with SplashScreen
         }
         .modelContainer(sharedModelContainer)
     }

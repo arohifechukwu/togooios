@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		F46C9F652D754A01003EECDA /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = F46C9F642D754A01003EECDA /* FirebaseAnalytics */; };
+		F46C9F672D754A01003EECDA /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F46C9F662D754A01003EECDA /* FirebaseAuth */; };
+		F46C9F692D754A01003EECDA /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = F46C9F682D754A01003EECDA /* FirebaseCore */; };
+		F46C9F6B2D754A01003EECDA /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = F46C9F6A2D754A01003EECDA /* FirebaseDatabase */; };
+		F46C9F6D2D754A01003EECDA /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = F46C9F6C2D754A01003EECDA /* FirebaseFirestore */; };
+		F46C9F6F2D754A01003EECDA /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = F46C9F6E2D754A01003EECDA /* FirebaseStorage */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		F43426D52D7541F300E01062 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,9 +38,30 @@
 		F43426DE2D7541F300E01062 /* togooUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = togooUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F46C9F612D754927003EECDA /* Exceptions for "togoo" folder in "togooTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"GoogleService-Info.plist",
+			);
+			target = F43426D32D7541F300E01062 /* togooTests */;
+		};
+		F46C9F622D754927003EECDA /* Exceptions for "togoo" folder in "togooUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"GoogleService-Info.plist",
+			);
+			target = F43426DD2D7541F300E01062 /* togooUITests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F43426C32D7541F100E01062 /* togoo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F46C9F612D754927003EECDA /* Exceptions for "togoo" folder in "togooTests" target */,
+				F46C9F622D754927003EECDA /* Exceptions for "togoo" folder in "togooUITests" target */,
+			);
 			path = togoo;
 			sourceTree = "<group>";
 		};
@@ -52,6 +82,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F46C9F652D754A01003EECDA /* FirebaseAnalytics in Frameworks */,
+				F46C9F692D754A01003EECDA /* FirebaseCore in Frameworks */,
+				F46C9F6B2D754A01003EECDA /* FirebaseDatabase in Frameworks */,
+				F46C9F6D2D754A01003EECDA /* FirebaseFirestore in Frameworks */,
+				F46C9F672D754A01003EECDA /* FirebaseAuth in Frameworks */,
+				F46C9F6F2D754A01003EECDA /* FirebaseStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +148,12 @@
 			);
 			name = togoo;
 			packageProductDependencies = (
+				F46C9F642D754A01003EECDA /* FirebaseAnalytics */,
+				F46C9F662D754A01003EECDA /* FirebaseAuth */,
+				F46C9F682D754A01003EECDA /* FirebaseCore */,
+				F46C9F6A2D754A01003EECDA /* FirebaseDatabase */,
+				F46C9F6C2D754A01003EECDA /* FirebaseFirestore */,
+				F46C9F6E2D754A01003EECDA /* FirebaseStorage */,
 			);
 			productName = togoo;
 			productReference = F43426C12D7541F100E01062 /* togoo.app */;
@@ -195,6 +237,9 @@
 			);
 			mainGroup = F43426B82D7541F100E01062;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F43426C22D7541F100E01062 /* Products */;
 			projectDirPath = "";
@@ -389,9 +434,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = togoo/togoo.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"togoo/Preview Content\"";
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -426,9 +473,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = togoo/togoo.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"togoo/Preview Content\"";
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -583,6 +632,50 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F46C9F642D754A01003EECDA /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		F46C9F662D754A01003EECDA /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		F46C9F682D754A01003EECDA /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		F46C9F6A2D754A01003EECDA /* FirebaseDatabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDatabase;
+		};
+		F46C9F6C2D754A01003EECDA /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		F46C9F6E2D754A01003EECDA /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = F43426B92D7541F100E01062 /* Project object */;
 }
