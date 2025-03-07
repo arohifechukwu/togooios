@@ -5,10 +5,9 @@
 //  Created by Ifechukwu Aroh on 2025-03-02.
 //
 
-
 import SwiftUI
 import FirebaseAuth
-import FirebaseFirestore
+import FirebaseDatabase
 
 // Custom Checkbox Toggle Style for iOS
 struct CheckboxToggleStyle: ToggleStyle {
@@ -62,7 +61,7 @@ struct SignupView: View {
                     Spacer().frame(height: 60)
                     
                     // Logo
-                    Image("logo") // Ensure "logo" is in Assets.xcassets
+                    Image("logo")
                         .resizable()
                         .frame(width: 150, height: 150)
                     
@@ -98,7 +97,7 @@ struct SignupView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
                     
-                    // Terms & Conditions Checkbox using our custom style
+                    // Terms & Conditions Checkbox using custom style
                     Toggle(isOn: $termsAccepted) {
                         Text("I agree to Terms & Conditions")
                             .foregroundColor(darkGray)
@@ -119,13 +118,20 @@ struct SignupView: View {
                     }
                     .padding(.horizontal, 24)
                     
-                    // Login Link
-                    Button(action: {
-                        navigateToLogin = true
-                    }) {
-                        Text("Already registered? Log In")
-                            .foregroundColor(primaryColor)
-                            .fontWeight(.bold)
+                    // Navigation Links
+                    VStack(spacing: 10) {
+                        Button(action: {
+                            navigateToLogin = true
+                        }) {
+                            Text("Already registered? Log In")
+                                .foregroundColor(primaryColor)
+                                .fontWeight(.bold)
+                        }
+                        NavigationLink(destination: RegistrationView()) {
+                                                Text("Are You A Driver Or Own A Restaurant? Register Here!")
+                                                    .foregroundColor(secondaryColor)
+                                                    .fontWeight(.bold)
+                        }
                     }
                     .padding(.top, 20)
                     
@@ -135,10 +141,10 @@ struct SignupView: View {
             .background(white)
             .navigationBarBackButtonHidden(true) // Hide default back button
             .toolbar {
-                // Custom back navigation button in the navigation bar
+                // Custom back navigation button
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
-                        dismiss()  // Dismisses the current view (or pop from NavigationStack)
+                        dismiss()
                     }) {
                         HStack {
                             Image(systemName: "chevron.left")
@@ -161,8 +167,6 @@ struct SignupView: View {
     }
     
     // MARK: - Helper View Builders
-    
-    /// Reusable Text Field Builder
     func customTextField(text: Binding<String>, placeholder: String, keyboardType: UIKeyboardType) -> some View {
         TextField(placeholder, text: text)
             .keyboardType(keyboardType)
@@ -176,7 +180,6 @@ struct SignupView: View {
             .padding(.bottom, 10)
     }
     
-    /// Reusable Password Field with Visibility Toggle
     func customPasswordField(text: Binding<String>, placeholder: String, isVisible: Binding<Bool>) -> some View {
         ZStack(alignment: .trailing) {
             Group {
@@ -205,7 +208,7 @@ struct SignupView: View {
         }
     }
     
-    // MARK: - Firebase Signup Functionality
+    // MARK: - Firebase Signup Functionality (store in Realtime DB under "customer")
     func registerUser() {
         guard !fullName.isEmpty,
               !email.isEmpty,
@@ -217,19 +220,16 @@ struct SignupView: View {
             showAlert = true
             return
         }
-        
         guard termsAccepted else {
             alertMessage = "You must accept the Terms & Conditions."
             showAlert = true
             return
         }
-        
         guard password == confirmPassword else {
             alertMessage = "Passwords do not match!"
             showAlert = true
             return
         }
-        
         guard isValidPassword(password) else {
             alertMessage = "Password must be at least 6 characters and include letters, numbers, and symbols."
             showAlert = true
@@ -244,17 +244,19 @@ struct SignupView: View {
             }
             
             guard let uid = authResult?.user.uid else { return }
+            let userRef = Database.database().reference().child("customer").child(uid)
             
+            // Prepare user data
             let userData: [String: Any] = [
                 "name": fullName,
                 "email": email,
                 "phone": phone,
                 "address": address,
                 "role": "customer",
-                "createdAt": FieldValue.serverTimestamp()
+                "createdAt": ServerValue.timestamp()
             ]
             
-            Firestore.firestore().collection("users").document(uid).setData(userData) { error in
+            userRef.setValue(userData) { error, _ in
                 if let error = error {
                     alertMessage = "Error saving user data: \(error.localizedDescription)"
                     showAlert = true

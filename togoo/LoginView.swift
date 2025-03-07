@@ -1,6 +1,6 @@
 //
-//  LoginView.swift
-//  togoo
+// LoginView.swift
+// togoo
 //
 //  Created by Ifechukwu Aroh on 2025-03-02.
 //
@@ -8,7 +8,7 @@
 
 import SwiftUI
 import FirebaseAuth
-import FirebaseFirestore
+import FirebaseDatabase
 
 struct LoginView: View {
     // MARK: - State Properties
@@ -32,15 +32,15 @@ struct LoginView: View {
     let buttonDefault = Color(hex: "F18D34")
     let buttonPressed = Color(hex: "E67E22")
     let buttonDisabled = Color(hex: "FFB066")
-
+    
     // MARK: - Body
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
                 Spacer().frame(height: 40)
-
+                
                 // Logo
-                Image("logo") // Ensure "logo" is added in Assets.xcassets
+                Image("logo") // Ensure "logo" is in Assets.xcassets
                     .resizable()
                     .frame(width: 150, height: 150)
                 
@@ -56,7 +56,7 @@ struct LoginView: View {
                 
                 // Customer Login Image (tap does nothing here)
                 Button(action: {
-                    // Placeholder for action if needed
+                    // Placeholder for any action
                 }) {
                     Image("customer_login")
                         .resizable()
@@ -135,7 +135,7 @@ struct LoginView: View {
                 
                 Spacer()
             }
-            .navigationBarBackButtonHidden(true) // Disables the default back button
+            .navigationBarBackButtonHidden(true) // Disable the default back button
             .navigationDestination(isPresented: $navigateToHome) {
                 if let destination = destinationView {
                     destination
@@ -173,31 +173,50 @@ struct LoginView: View {
         }
     }
     
+    // MARK: - Validate User Role Using Realtime Database
     func validateUserRole(uid: String) {
-        let db = Firestore.firestore()
-        db.collection("users").document(uid).getDocument { document, error in
-            if let document = document, document.exists {
-                let data = document.data()
-                let role = data?["role"] as? String ?? "customer"
-                DispatchQueue.main.async {
-                    switch role {
-                    case "customer":
-                        destinationView = AnyView(CustomerHomeView())
-                    case "driver":
-                        destinationView = AnyView(DriverHomeView())
-                    case "restaurant":
-                        destinationView = AnyView(RestaurantHomeView())
-                    case "admin":
-                        destinationView = AnyView(AdminHomeView())
-                    default:
-                        destinationView = AnyView(CustomerHomeView())
-                    }
-                    navigateToHome = true
-                }
+        let ref = Database.database().reference()
+        checkUserRoleInNode(node: "customer", uid: uid, ref: ref)
+    }
+    
+    func checkUserRoleInNode(node: String, uid: String, ref: DatabaseReference) {
+        ref.child(node).child(uid).observeSingleEvent(of: .value) { snapshot in
+            if snapshot.exists(), let role = snapshot.childSnapshot(forPath: "role").value as? String {
+                navigateToDashboard(role: role)
             } else {
-                errorMessage = "User role not found!"
-                showError = true
+                // Check next node if not found
+                if node == "customer" {
+                    checkUserRoleInNode(node: "driver", uid: uid, ref: ref)
+                } else if node == "driver" {
+                    checkUserRoleInNode(node: "restaurant", uid: uid, ref: ref)
+                } else if node == "restaurant" {
+                    checkUserRoleInNode(node: "admin", uid: uid, ref: ref)
+                } else {
+                    errorMessage = "User role not found!"
+                    showError = true
+                }
             }
+        } withCancel: { error in
+            errorMessage = "Database error: \(error.localizedDescription)"
+            showError = true
+        }
+    }
+    
+    func navigateToDashboard(role: String) {
+        DispatchQueue.main.async {
+            switch role {
+            case "customer":
+                destinationView = AnyView(CustomerHomeView())
+            case "driver":
+                destinationView = AnyView(DriverHomeView())
+            case "restaurant":
+                destinationView = AnyView(RestaurantHomeView())
+            case "admin":
+                destinationView = AnyView(AdminHomeView())
+            default:
+                destinationView = AnyView(CustomerHomeView())
+            }
+            navigateToHome = true
         }
     }
 }
