@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F437AF762D869F890073197C /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = F437AF752D869F890073197C /* FirebaseFunctions */; };
 		F46C9F652D754A01003EECDA /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = F46C9F642D754A01003EECDA /* FirebaseAnalytics */; };
 		F46C9F672D754A01003EECDA /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F46C9F662D754A01003EECDA /* FirebaseAuth */; };
 		F46C9F692D754A01003EECDA /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = F46C9F682D754A01003EECDA /* FirebaseCore */; };
@@ -83,6 +84,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F46C9F652D754A01003EECDA /* FirebaseAnalytics in Frameworks */,
+				F437AF762D869F890073197C /* FirebaseFunctions in Frameworks */,
 				F46C9F692D754A01003EECDA /* FirebaseCore in Frameworks */,
 				F46C9F6B2D754A01003EECDA /* FirebaseDatabase in Frameworks */,
 				F46C9F6D2D754A01003EECDA /* FirebaseFirestore in Frameworks */,
@@ -114,6 +116,7 @@
 				F43426C32D7541F100E01062 /* togoo */,
 				F43426D72D7541F300E01062 /* togooTests */,
 				F43426E12D7541F300E01062 /* togooUITests */,
+				F437AF742D869F890073197C /* Frameworks */,
 				F43426C22D7541F100E01062 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -126,6 +129,13 @@
 				F43426DE2D7541F300E01062 /* togooUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		F437AF742D869F890073197C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -154,6 +164,7 @@
 				F46C9F6A2D754A01003EECDA /* FirebaseDatabase */,
 				F46C9F6C2D754A01003EECDA /* FirebaseFirestore */,
 				F46C9F6E2D754A01003EECDA /* FirebaseStorage */,
+				F437AF752D869F890073197C /* FirebaseFunctions */,
 			);
 			productName = togoo;
 			productReference = F43426C12D7541F100E01062 /* togoo.app */;
@@ -645,6 +656,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		F437AF752D869F890073197C /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
+		};
 		F46C9F642D754A01003EECDA /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

@@ -5,6 +5,7 @@
 //  Created by Ifechukwu Aroh on 2025-03-07.
 //
 
+
 import SwiftUI
 import FirebaseAuth
 import FirebaseDatabase
@@ -41,7 +42,8 @@ struct RegistrationView: View {
     // MARK: - Alert & Navigation
     @State private var showAlert: Bool = false
     @State private var alertMessage: String = ""
-    @State private var navigateToLogin: Bool = false
+    // We'll navigate to a "RegistrationStatusView" after successful registration (status pending)
+    @State private var navigateToStatus: Bool = false
     
     // MARK: - Loading State
     @State private var isLoading: Bool = false
@@ -58,6 +60,10 @@ struct RegistrationView: View {
     @State private var passwordVisible: Bool = false
     @State private var confirmPasswordVisible: Bool = false
     
+    // MARK: - Upload Counters
+    @State private var expectedUploads: Int = 0
+    @State private var uploadCount: Int = 0
+    
     // MARK: - Color Palette (using Color(hex:) from Color+Hex.swift)
     let primaryColor = Color(hex: "F18D34")       // Dark Orange
     let primaryVariant = Color(hex: "E67E22")       // Slightly Darker Orange
@@ -70,9 +76,9 @@ struct RegistrationView: View {
     let buttonPressed = Color(hex: "E67E22")
     let buttonDisabled = Color(hex: "FFB066")
     
-    // MARK: - Environment Dismiss (if needed)
+    // MARK: - Environment
     @Environment(\.dismiss) var dismiss
-
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -238,8 +244,8 @@ struct RegistrationView: View {
                     }
                 }
             }
-            .navigationDestination(isPresented: $navigateToLogin) {
-                LoginView().navigationBarBackButtonHidden(true)
+            .navigationDestination(isPresented: $navigateToStatus) {
+                RegistrationStatusView().navigationBarBackButtonHidden(true)
             }
             .alert("Registration Error", isPresented: $showAlert) {
                 Button("OK", role: .cancel) { }
@@ -365,38 +371,32 @@ struct RegistrationView: View {
             let businessNode = businessType.lowercased()  // "driver" or "restaurant"
             let userRef = Database.database().reference().child(businessNode).child(uid)
             
-            // Prepare user data
+            // Prepare user data and set registration status as pending
             var userData: [String: Any] = [
                 "name": fullName,
                 "email": email,
                 "phone": phone,
                 "address": address,
                 "role": businessType,
+                "status": "pending",
                 "createdAt": ServerValue.timestamp()
             ]
             
             let storageRef = Storage.storage().reference()
-            var uploadsNeeded = 0
-            var uploadsCompleted = 0
+            expectedUploads = 0
+            uploadCount = 0
             
             func checkAndUpdate() {
-                uploadsCompleted += 1
-                if uploadsCompleted == uploadsNeeded {
-                    userRef.setValue(userData) { error, _ in
-                        if let error = error {
-                            alertMessage = "Registration update failed: \(error.localizedDescription)"
-                            showAlert = true
-                        } else {
-                            navigateToLogin = true
-                        }
-                    }
+                uploadCount += 1
+                if uploadCount == expectedUploads {
+                    updateUserRecord(userRef: userRef, userData: userData)
                 }
             }
             
             if businessType.lowercased() == "driver" {
                 // Driver License
                 if let fileURL = driverLicenseURL {
-                    uploadsNeeded += 1
+                    expectedUploads += 1
                     let fileRef = storageRef.child("driver").child("\(uid)_driverLicense.jpg")
                     fileRef.putFile(from: fileURL, metadata: nil) { _, error in
                         if let error = error {
@@ -415,12 +415,12 @@ struct RegistrationView: View {
                     }
                 } else {
                     userData["driverLicense"] = driverLicenseInput
-                    uploadsNeeded += 1
+                    expectedUploads += 1
                     checkAndUpdate()
                 }
                 // Vehicle Registration
                 if let fileURL = vehicleRegistrationURL {
-                    uploadsNeeded += 1
+                    expectedUploads += 1
                     let fileRef = storageRef.child("driver").child("\(uid)_vehicleRegistration.jpg")
                     fileRef.putFile(from: fileURL, metadata: nil) { _, error in
                         if let error = error {
@@ -439,13 +439,13 @@ struct RegistrationView: View {
                     }
                 } else {
                     userData["vehicleRegistration"] = vehicleRegistrationInput
-                    uploadsNeeded += 1
+                    expectedUploads += 1
                     checkAndUpdate()
                 }
             } else if businessType.lowercased() == "restaurant" {
                 // Restaurant License
                 if let fileURL = restaurantLicenseURL {
-                    uploadsNeeded += 1
+                    expectedUploads += 1
                     let fileRef = storageRef.child("restaurant").child("\(uid)_restaurantLicense.jpg")
                     fileRef.putFile(from: fileURL, metadata: nil) { _, error in
                         if let error = error {
@@ -464,12 +464,12 @@ struct RegistrationView: View {
                     }
                 } else {
                     userData["restaurantLicense"] = restaurantLicenseInput
-                    uploadsNeeded += 1
+                    expectedUploads += 1
                     checkAndUpdate()
                 }
                 // Retail License
                 if let fileURL = retailLicenseURL {
-                    uploadsNeeded += 1
+                    expectedUploads += 1
                     let fileRef = storageRef.child("restaurant").child("\(uid)_retailLicense.jpg")
                     fileRef.putFile(from: fileURL, metadata: nil) { _, error in
                         if let error = error {
@@ -488,18 +488,28 @@ struct RegistrationView: View {
                     }
                 } else {
                     userData["retailLicense"] = retailLicenseInput
-                    uploadsNeeded += 1
+                    expectedUploads += 1
                     checkAndUpdate()
                 }
             } else {
-                userRef.setValue(userData) { error, _ in
-                    if let error = error {
-                        alertMessage = "Registration update failed: \(error.localizedDescription)"
-                        showAlert = true
-                    } else {
-                        navigateToLogin = true
-                    }
-                }
+                updateUserRecord(userRef: userRef, userData: userData)
+            }
+            
+            // If no uploads are needed, update user record immediately.
+            if expectedUploads == 0 {
+                updateUserRecord(userRef: userRef, userData: userData)
+            }
+        }
+    }
+    
+    func updateUserRecord(userRef: DatabaseReference, userData: [String: Any]) {
+        userRef.setValue(userData) { error, _ in
+            if let error = error {
+                alertMessage = "Registration update failed: \(error.localizedDescription)"
+                showAlert = true
+            } else {
+                // Navigate to a status view showing pending registration
+                navigateToStatus = true
             }
         }
     }

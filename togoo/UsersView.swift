@@ -1,23 +1,21 @@
 //
-//  AdminHomeView.swift
+//  UsersView.swift
 //  togoo
 //
-//  Created by Ifechukwu Aroh on 2025-03-02.
+//  Created by Ifechukwu Aroh on 2025-03-16.
 //
-
 
 import SwiftUI
 import FirebaseAuth
 import FirebaseDatabase
 
-
-struct AdminHomeView: View {
+struct UsersView: View {
     @State private var users: [User] = []
-    @State private var navigateToHome: Bool = false
+    @State private var selectedTab: Tab = .users
+    @State private var navigateToDestination: Bool = false
     @State private var destinationView: AnyView? = nil
-    @State private var selectedTab: Tab = .dashboard
 
-    // Define bottom navigation tabs
+    // Define tabs for bottom navigation
     enum Tab: String {
         case dashboard = "Dashboard"
         case users = "Users"
@@ -39,7 +37,7 @@ struct AdminHomeView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Header
-                Text("Admin Dashboard")
+                Text("Users List")
                     .font(.headline)
                     .foregroundColor(white)
                     .frame(maxWidth: .infinity)
@@ -56,7 +54,7 @@ struct AdminHomeView: View {
                         ScrollView {
                             VStack(spacing: 10) {
                                 ForEach(users) { user in
-                                    ApprovedCardView(user: user, primaryColor: primaryColor)
+                                    UsersCardView(user: user, primaryColor: primaryColor)
                                         .padding(.horizontal, 8)
                                 }
                             }
@@ -81,31 +79,32 @@ struct AdminHomeView: View {
                     AdminBottomNavItem(imageName: "ic_dashboard", title: Tab.dashboard.rawValue, isSelected: selectedTab == .dashboard) {
                         selectedTab = .dashboard
                         destinationView = AnyView(AdminHomeView())
-                        navigateToHome = true
+                        navigateToDestination = true
                     }
                     Spacer()
-                    AdminBottomNavItem(imageName: "ic_users", title: Tab.users.rawValue, isSelected: selectedTab == .users) {
+                    AdminBottomNavItem(imageName: "ic_users", title: Tab.users.rawValue, isSelected:
+                        selectedTab == .users) {
                         selectedTab = .users
                         destinationView = AnyView(UsersView())
-                        navigateToHome = true
+                        navigateToDestination = true
                     }
                     Spacer()
                     AdminBottomNavItem(imageName: "ic_approvals", title: Tab.approvals.rawValue, isSelected: selectedTab == .approvals) {
                         selectedTab = .approvals
                         destinationView = AnyView(ApprovalView())
-                        navigateToHome = true
+                        navigateToDestination = true
                     }
                     Spacer()
                     AdminBottomNavItem(imageName: "ic_transaction", title: Tab.transaction.rawValue, isSelected: selectedTab == .transaction) {
                         selectedTab = .transaction
                         destinationView = AnyView(TransactionView())
-                        navigateToHome = true
+                        navigateToDestination = true
                     }
                     Spacer()
                     AdminBottomNavItem(imageName: "ic_settings", title: Tab.settings.rawValue, isSelected: selectedTab == .settings) {
                         selectedTab = .settings
                         destinationView = AnyView(SettingsView())
-                        navigateToHome = true
+                        navigateToDestination = true
                     }
                     Spacer()
                 }
@@ -115,7 +114,7 @@ struct AdminHomeView: View {
             }
             .background(lightGray.edgesIgnoringSafeArea(.all))
             .navigationBarBackButtonHidden(true)
-            .navigationDestination(isPresented: $navigateToHome) {
+            .navigationDestination(isPresented: $navigateToDestination) {
                 if let destination = destinationView {
                     destination.navigationBarBackButtonHidden(true)
                 } else {
@@ -123,32 +122,30 @@ struct AdminHomeView: View {
                 }
             }
             .onAppear {
-                fetchApprovedUsers()
+                fetchUsers()
             }
         }
     }
 
-    // MARK: - Fetch Approved Users
-    func fetchApprovedUsers() {
+    // MARK: - Fetch Users from Realtime Database
+    func fetchUsers() {
         let dbRef = Database.database().reference()
         var allUsers: [User] = []
         let group = DispatchGroup()
-        let nodes = ["customer", "driver", "restaurant"]
+        let nodes = ["customer", "driver", "restaurant", "admin"]
 
         for node in nodes {
             group.enter()
             dbRef.child(node).observeSingleEvent(of: .value) { snapshot in
                 for child in snapshot.children {
                     if let snap = child as? DataSnapshot,
-                       let userData = snap.value as? [String: Any],
-                       let status = userData["status"] as? String,
-                       status.lowercased() == "approved" {
+                       let userData = snap.value as? [String: Any] {
                         let user = User(
                             userId: snap.key,
                             name: userData["name"] as? String ?? "",
                             email: userData["email"] as? String ?? "",
-                            role: userData["role"] as? String ?? "",
-                            status: status
+                            role: node.capitalized,
+                            status: userData["status"] as? String ?? ""
                         )
                         allUsers.append(user)
                     }
@@ -166,8 +163,8 @@ struct AdminHomeView: View {
 }
 
 // MARK: - Preview
-struct AdminHomeView_Previews: PreviewProvider {
+struct UsersView_Previews: PreviewProvider {
     static var previews: some View {
-        AdminHomeView()
+        UsersView()
     }
 }

@@ -33,7 +33,6 @@ struct LoginView: View {
     let buttonPressed = Color(hex: "E67E22")
     let buttonDisabled = Color(hex: "FFB066")
     
-    // MARK: - Body
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
@@ -56,11 +55,11 @@ struct LoginView: View {
                 
                 // Customer Login Image (tap does nothing here)
                 Button(action: {
-                    // Placeholder for any action
+                    // Optional action for the image
                 }) {
                     Image("customer_login")
                         .resizable()
-                        .frame(width: 50.0, height: 50)
+                        .frame(width: 50, height: 50)
                 }
                 
                 // Form Fields
@@ -119,7 +118,7 @@ struct LoginView: View {
                 
                 Spacer().frame(height: 20)
                 
-                // Signup & Forgot Password Links
+                // Navigation Links
                 VStack(spacing: 10) {
                     NavigationLink(destination: SignupView()) {
                         Text("Haven't Registered? Signup")
@@ -135,11 +134,26 @@ struct LoginView: View {
                 
                 Spacer()
             }
-            .navigationBarBackButtonHidden(true) // Disable the default back button
+            .navigationBarBackButtonHidden(true) // Disable default back button
+            .toolbar {
+                // Custom back navigation button
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        // Navigate back to Login (or dismiss if presented modally)
+                        destinationView = AnyView(LoginView())
+                        navigateToHome = true
+                    }) {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                        .foregroundColor(primaryColor)
+                    }
+                }
+            }
             .navigationDestination(isPresented: $navigateToHome) {
                 if let destination = destinationView {
-                    destination
-                        .navigationBarBackButtonHidden(true)
+                    destination.navigationBarBackButtonHidden(true)
                 } else {
                     EmptyView()
                 }
@@ -150,11 +164,13 @@ struct LoginView: View {
                       dismissButton: .default(Text("OK")))
             }
         }
+        .onAppear {
+            // Optionally, you can check if the user is already logged in
+        }
     }
     
     // MARK: - Firebase Login Functionality
     func loginUser() {
-        // Validate form fields
         guard !email.isEmpty, !password.isEmpty else {
             errorMessage = "Enter your email and password"
             showError = true
@@ -176,21 +192,31 @@ struct LoginView: View {
     // MARK: - Validate User Role Using Realtime Database
     func validateUserRole(uid: String) {
         let ref = Database.database().reference()
-        checkUserRoleInNode(node: "customer", uid: uid, ref: ref)
+        // First check "customer" node
+        ref.child("customer").child(uid).observeSingleEvent(of: .value) { snapshot in
+            if snapshot.exists() {
+                handleUserStatus(snapshot: snapshot, uid: uid)
+            } else {
+                // If not found, check "driver"
+                checkUserRoleInNode(node: "driver", uid: uid, ref: ref)
+            }
+        } withCancel: { error in
+            errorMessage = "Database error: \(error.localizedDescription)"
+            showError = true
+        }
     }
     
     func checkUserRoleInNode(node: String, uid: String, ref: DatabaseReference) {
         ref.child(node).child(uid).observeSingleEvent(of: .value) { snapshot in
-            if snapshot.exists(), let role = snapshot.childSnapshot(forPath: "role").value as? String {
-                navigateToDashboard(role: role)
+            if snapshot.exists() {
+                handleUserStatus(snapshot: snapshot, uid: uid)
             } else {
-                // Check next node if not found
-                if node == "customer" {
-                    checkUserRoleInNode(node: "driver", uid: uid, ref: ref)
-                } else if node == "driver" {
+                if node == "driver" {
                     checkUserRoleInNode(node: "restaurant", uid: uid, ref: ref)
                 } else if node == "restaurant" {
                     checkUserRoleInNode(node: "admin", uid: uid, ref: ref)
+                } else if node == "admin" {
+                    checkAdminAccess(uid: uid)
                 } else {
                     errorMessage = "User role not found!"
                     showError = true
@@ -202,9 +228,52 @@ struct LoginView: View {
         }
     }
     
+    func checkAdminAccess(uid: String) {
+        let ref = Database.database().reference()
+        ref.child("admin").child(uid).observeSingleEvent(of: .value) { snapshot in
+            if snapshot.exists(), let role = snapshot.childSnapshot(forPath: "role").value as? String, role.lowercased() == "admin" {
+                navigateToDashboard(role: "admin")
+            } else {
+                errorMessage = "Access Denied: Not an Admin"
+                showError = true
+            }
+        } withCancel: { error in
+            errorMessage = "Database error: \(error.localizedDescription)"
+            showError = true
+        }
+    }
+    
+    func handleUserStatus(snapshot: DataSnapshot, uid: String) {
+        let role = snapshot.childSnapshot(forPath: "role").value as? String ?? "customer"
+        let status = snapshot.childSnapshot(forPath: "status").value as? String ?? "approved"
+        
+        if status.lowercased() == "suspended" {
+            errorMessage = "Account Suspended. Contact Administrator"
+            showError = true
+            return
+        }
+        
+        if status.lowercased() == "deleted" {
+            do {
+                try Auth.auth().signOut()
+            } catch { }
+            errorMessage = "Account does not exist"
+            showError = true
+            return
+        }
+        
+        if status.lowercased() == "pending" {
+            destinationView = AnyView(RegistrationStatusView())
+            navigateToHome = true
+            return
+        }
+        
+        navigateToDashboard(role: role)
+    }
+    
     func navigateToDashboard(role: String) {
         DispatchQueue.main.async {
-            switch role {
+            switch role.lowercased() {
             case "customer":
                 destinationView = AnyView(CustomerHomeView())
             case "driver":
@@ -221,7 +290,8 @@ struct LoginView: View {
     }
 }
 
-// MARK: - Preview Provider
+
+
 struct LoginView_Previews: PreviewProvider {
     static var previews: some View {
         LoginView()
