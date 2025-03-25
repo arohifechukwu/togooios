@@ -32,3 +32,10 @@ extension Color {
         )
     }
 }
+
+
+// Define your custom colors based on your colors.xml values
+extension Color {
+    static let darkGray = Color(hex: "#757575")         // from <color name="dark_gray">#757575</color>
+    static let primaryVariant = Color(hex: "#E67E22")     // from <color name="primary_variant">#E67E22</color>
+}
