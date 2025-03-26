@@ -12,7 +12,7 @@ import FirebaseAuth
 
 struct FeaturedCategoryView: View {
     let selectedCategory: String
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.presentationMode) private var presentationMode
     @State private var foodItems: [FoodItem] = []
     @State private var showNoItemsAlert: Bool = false
 
@@ -31,7 +31,7 @@ struct FeaturedCategoryView: View {
             VStack(spacing: 0) {
                 // Header
                 HStack {
-                    Button(action: { dismiss() }) {
+                    Button(action: { presentationMode.wrappedValue.dismiss() }) {
                         Image(systemName: "chevron.left")
                         Text("Back")
                     }
@@ -41,9 +41,8 @@ struct FeaturedCategoryView: View {
 
                     Text(selectedCategory)
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(.black)
                         .padding(8)
-                        .background(primaryColor)
                         .cornerRadius(6)
 
                     Spacer()
@@ -165,7 +164,9 @@ struct FeaturedCategoryView: View {
             .background(Color(hex: "F5F5F5"))
             .navigationBarBackButtonHidden(true)
             .alert("No Items", isPresented: $showNoItemsAlert) {
-                Button("OK", role: .cancel) { dismiss() }
+                Button("OK", role: .cancel) {
+                    presentationMode.wrappedValue.dismiss()
+                }
             } message: {
                 Text("No items found for \(selectedCategory).")
             }

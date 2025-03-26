@@ -10,11 +10,13 @@ import FirebaseAuth
 import FirebaseDatabase
 
 struct CartView: View {
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.presentationMode) private var presentationMode
     @State private var cartItems: [CartItem] = []
 
     @State private var navigateToCheckout: Bool = false
-
+    
+    let primaryColor = Color(hex: "F18D34")
+    
     private var cartRef: DatabaseReference? {
         guard let uid = Auth.auth().currentUser?.uid else { return nil }
         return Database.database().reference(withPath: "cart").child(uid)
@@ -25,21 +27,21 @@ struct CartView: View {
             VStack(spacing: 0) {
                 // 🔹 Custom Header
                 HStack {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .foregroundColor(.black)
-                            .padding()
-                    }
-
-                    Text("Cart")
-                        .font(.title3.bold())
-                        .foregroundColor(.black)
-
-                    Spacer()
-                }
-                .padding(.horizontal)
+                        Button(action: { presentationMode.wrappedValue.dismiss() }) {                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                 Text("Back")
+                                   }
+                                    .foregroundColor(primaryColor)
+                                    }
+                                    Spacer()
+                                    Text("Cart")
+                                .font(.title3.bold())
+                                        .foregroundColor(.black)
+                                    Spacer()
+                                    Spacer().frame(width: 60) // for alignment
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 12)
 
                 Divider()
 

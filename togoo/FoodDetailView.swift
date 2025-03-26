@@ -12,7 +12,7 @@ import FirebaseAuth
 
 struct FoodDetailView: View {
     let foodItem: FoodItem
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.presentationMode) private var presentationMode
 
     // Programmatic navigation
     @State private var navigateToCheckout = false
@@ -97,7 +97,7 @@ struct FoodDetailView: View {
             .navigationBarBackButtonHidden(true)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }) {
+                    Button(action: { presentationMode.wrappedValue.dismiss() }) {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                             Text("Back")

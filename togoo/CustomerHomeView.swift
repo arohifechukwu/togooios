@@ -19,6 +19,8 @@ struct CustomerHomeView: View {
     @State private var featuredCategories: [FoodCategory] = []
     @State private var specialOffers: [FoodItem] = []
     @State private var topPicks: [FoodItem] = []
+    @State private var allSearchResults: [FoodItem] = []
+    @State private var showViewAllLink: Bool = false
 
     @State private var navigateToDestination: Bool = false
     @State private var destinationView: AnyView? = nil
@@ -33,7 +35,7 @@ struct CustomerHomeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 14) {
                     headerView
                     searchBar
                     searchResultsView
@@ -44,7 +46,6 @@ struct CustomerHomeView: View {
                 .padding(.bottom, 16)
             }
             .background(lightGray.edgesIgnoringSafeArea(.all))
-            .navigationTitle("Home")
             .navigationBarBackButtonHidden(true)
             .onAppear {
                 locationText = locationManager.locationName
@@ -80,14 +81,17 @@ struct CustomerHomeView: View {
                     .resizable()
                     .frame(width: 24, height: 24)
             }
-        }.padding(.horizontal)
+        }
+        .padding(.horizontal)
+        .padding(.top, 12)
     }
 
     private var searchBar: some View {
-        TextField("Search for food...", text: $searchQuery)
+        TextField("Search menu...", text: $searchQuery)
             .padding(8)
             .background(Color(.systemGray6))
             .cornerRadius(8)
+            .shadow(radius: 4)
             .padding(.horizontal)
             .onChange(of: searchQuery) { newQuery in
                 let trimmed = newQuery.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -98,30 +102,48 @@ struct CustomerHomeView: View {
                 }
             }
     }
-
+    
     private var searchResultsView: some View {
         Group {
             if !searchSuggestions.isEmpty {
-                List(searchSuggestions) { food in
-                    NavigationLink(destination: FoodDetailView(foodItem: food)) {
-                        HStack {
-                            AsyncImage(url: URL(string: food.imageUrl)) { image in
-                                image.resizable()
-                            } placeholder: {
-                                Color.gray
-                            }
-                            .frame(width: 50, height: 50)
-                            VStack(alignment: .leading) {
-                                Text(food.id)
-                                    .font(.headline)
-                                Text(food.description)
-                                    .font(.subheadline)
+                VStack(alignment: .leading, spacing: 8) {
+                    List(searchSuggestions) { food in
+                        NavigationLink(destination: FoodDetailView(foodItem: food)) {
+                            HStack {
+                                AsyncImage(url: URL(string: food.imageUrl)) { image in
+                                    image.resizable()
+                                } placeholder: {
+                                    Color.gray
+                                }
+                                .frame(width: 50, height: 50)
+                                .cornerRadius(6)
+
+                                VStack(alignment: .leading) {
+                                    Text(food.id)
+                                        .font(.headline)
+                                    Text(food.description)
+                                        .font(.subheadline)
+                                }
                             }
                         }
                     }
+                    .listStyle(PlainListStyle())
+                    .frame(height: CGFloat(searchSuggestions.count * 70)) // Adjust based on your row height
+
+                    // 🔗 View all results link
+                    if showViewAllLink {
+                        NavigationLink(
+                            destination: ViewAllView(results: allSearchResults, keyword: searchQuery)
+                        ) {
+                            Text("View all \(allSearchResults.count) results")
+                                .foregroundColor(primaryColor)
+                                .padding(.horizontal)
+                                .padding(.top, -8)
+                                .font(.subheadline.bold())
+                        }
+                    }
                 }
-                .listStyle(PlainListStyle())
-                .frame(height: 200)
+                .padding(.horizontal)
             }
         }
     }
@@ -150,7 +172,7 @@ struct CustomerHomeView: View {
                                 }
                                 Text(category.name)
                                     .font(.caption)
-                                    .foregroundColor(.darkGray) // ✅ Use custom dark gray
+                                    .foregroundColor(.darkGray) // 
                             }
                             .padding(8)
                             .background(Color.white)
@@ -315,31 +337,46 @@ struct CustomerHomeView: View {
     private func searchMenuItems(query: String) {
         let queryLower = query.lowercased()
         dbRef.child("restaurant").observeSingleEvent(of: .value) { snapshot in
-            var results: [FoodItem] = []
+            var prefixMatches: [FoodItem] = []
+            var substringMatches: [FoodItem] = []
+
             for case let restaurantSnap as DataSnapshot in snapshot.children {
-                if let restaurantData = restaurantSnap.value as? [String: Any],
-                   let menu = restaurantData["menu"] as? [String: Any] {
-                    for (_, foodDataAny) in menu {
-                        if let foodData = foodDataAny as? [String: Any],
-                           let foodId = foodData["id"] as? String {
-                            if foodId.lowercased().contains(queryLower) {
-                                let item = FoodItem(
-                                    id: foodId,
-                                    description: foodData["description"] as? String ?? "",
-                                    imageUrl: foodData["imageUrl"] as? String ?? "",
-                                    price: foodData["price"] as? Double ?? 0.0
-                                )
-                                results.append(item)
+                let menuSnap = restaurantSnap.childSnapshot(forPath: "menu")
+                for categorySnap in menuSnap.children {
+                    if let category = categorySnap as? DataSnapshot {
+                        for foodSnap in category.children {
+                            if let foodData = foodSnap as? DataSnapshot {
+                                let id = foodData.key.lowercased()
+                                let description = foodData.childSnapshot(forPath: "description").value as? String ?? ""
+                                let imageUrl = foodData.childSnapshot(forPath: "imageURL").value as? String ?? ""
+                                let price = foodData.childSnapshot(forPath: "price").value as? Double ?? 0.0
+
+                                let foodItem = FoodItem(id: foodData.key, description: description, imageUrl: imageUrl, price: price)
+
+                                if id.hasPrefix(queryLower) {
+                                    prefixMatches.append(foodItem)
+                                } else if id.contains(queryLower) {
+                                    substringMatches.append(foodItem)
+                                }
                             }
                         }
                     }
                 }
             }
+
+            let mergedResults = prefixMatches + substringMatches
+
             DispatchQueue.main.async {
-                searchSuggestions = Array(results.prefix(5))
+                // Show top 5
+                self.searchSuggestions = Array(mergedResults.prefix(5))
+
+                // Store all results in a global var if needed for ViewAllView
+                self.allSearchResults = mergedResults
+                self.showViewAllLink = mergedResults.count > 5
             }
         }
     }
+    
 
     private func fetchFeaturedCategories() {
         featuredCategories = [

@@ -51,10 +51,7 @@ struct RegistrationStatusView: View {
                 // Custom back navigation button (if needed)
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
-                        // Dismiss or navigate back
-                        // Use dismiss() if this view was presented modally
-                        // Otherwise, set a navigation flag to navigate to LoginView.
-                        // Here, we simply navigate to LoginView.
+                        //navigate to LoginView.
                         destinationView = AnyView(LoginView())
                         navigateToLanding = true
                     }) {

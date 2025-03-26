@@ -11,7 +11,7 @@ import FirebaseAuth
 import FirebaseDatabase
 
 struct CheckoutView: View {
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.presentationMode) private var presentationMode
 
     @State var checkoutItems: [CartItem]
     @State private var subtotal: Double = 0.0
@@ -22,98 +22,99 @@ struct CheckoutView: View {
     private let GST_RATE = 0.05
     private let QST_RATE = 0.09975
 
+    let primaryColor = Color(hex: "F18D34")
+    let greenColor = Color(hex: "388E3C")
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // ✅ Custom Top Bar with safe area fix
-                VStack(spacing: 0) {
-                    HStack {
-                        Button(action: {
-                            dismiss()
-                        }) {
+                // ✅ Custom back + title bar
+                HStack {
+                    Button(action: { presentationMode.wrappedValue.dismiss() }) {                        HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
-                                .foregroundColor(.white)
-                                .padding(60)
-                                .background(Color.primaryColor)
-                                .clipShape(Circle())
+                            Text("Back")
                         }
-                        Text("Checkout")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding(.leading, 10)
-                        Spacer()
+                        .foregroundColor(primaryColor)
+                    }
+                    Spacer()
+                    Text("Checkout")
+                        .font(.headline)
+                        .foregroundColor(.black)
+                    Spacer()
+                    Spacer().frame(width: 60) // for alignment
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 12)
+
+                // ✅ Scrollable list of checkout items
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach($checkoutItems) { $item in
+                            CheckoutItemRow(cartItem: $item, onQuantityChanged: calculateTotal)
+                        }
+                        .onDelete(perform: deleteItems)
+
+                        Spacer(minLength: 100)
                     }
                     .padding(.horizontal)
-                    .padding(.bottom, 12)
+                    .padding(.top, 8)
                 }
-                .background(Color.primaryColor)
-                .ignoresSafeArea(edges: .top) // ✅ Clean background to the top
 
-                ScrollView {
-                    VStack(spacing: 0) {
-                        // 🛒 Checkout List
-                        VStack(spacing: 0) {
-                            ForEach($checkoutItems) { $item in
-                                CheckoutItemRow(cartItem: $item, onQuantityChanged: calculateTotal)
-                            }
-                            .onDelete(perform: deleteItems)
+                Divider()
+
+                // ✅ Static bottom section
+                VStack(spacing: 16) {
+                    VStack(spacing: 6) {
+                        HStack {
+                            Text("Subtotal")
+                            Spacer()
+                            Text("$\(subtotal, specifier: "%.2f")")
+                        }
+                        HStack {
+                            Text("GST (5%)")
+                            Spacer()
+                            Text("$\(gst, specifier: "%.2f")")
+                        }
+                        HStack {
+                            Text("QST (9.975%)")
+                            Spacer()
+                            Text("$\(qst, specifier: "%.2f")")
+                        }
+                        Divider()
+                        HStack {
+                            Text("Total")
+                                .fontWeight(.bold)
+                            Spacer()
+                            Text("$\(total, specifier: "%.2f")")
+                                .fontWeight(.bold)
+                        }
+                    }
+
+                    HStack(spacing: 12) {
+                        Button(action: proceedToPayment) {
+                            Text("Proceed to Payment")
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(greenColor)
+                                .cornerRadius(8)
                         }
 
-                        // 🧾 Price Summary
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("Subtotal")
-                                Spacer()
-                                Text("$\(subtotal, specifier: "%.2f")")
-                            }
-                            HStack {
-                                Text("GST (5%)")
-                                Spacer()
-                                Text("$\(gst, specifier: "%.2f")")
-                            }
-                            HStack {
-                                Text("QST (9.975%)")
-                                Spacer()
-                                Text("$\(qst, specifier: "%.2f")")
-                            }
-                            Divider()
-                            HStack {
-                                Text("Total")
-                                    .fontWeight(.bold)
-                                Spacer()
-                                Text("$\(total, specifier: "%.2f")")
-                                    .fontWeight(.bold)
-                            }
+                        NavigationLink(destination: CustomerHomeView()) {
+                            Text("Cancel Order")
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(primaryColor)
+                                .cornerRadius(8)
                         }
-                        .padding()
-                        .background(Color(.systemGray6))
-
-                        // 🟢 Action Buttons
-                        HStack(spacing: 12) {
-                            Button(action: proceedToPayment) {
-                                Text("Proceed to Payment")
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.holoGreenDark)
-                                    .cornerRadius(8)
-                            }
-
-                            NavigationLink(destination: CustomerHomeView()) {
-                                Text("Cancel Order")
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.primaryColor)
-                                    .cornerRadius(8)
-                            }
-                        }
-                        .padding()
                     }
                 }
-                .onAppear(perform: calculateTotal)
+                .padding()
+                .background(Color(.systemGray6))
             }
             .navigationBarBackButtonHidden(true)
+            .onAppear(perform: calculateTotal)
         }
     }
 
@@ -132,31 +133,13 @@ struct CheckoutView: View {
     private func proceedToPayment() {
         print("Proceeding to payment with \(checkoutItems.count) items.")
     }
-
-    private func cancelOrder() {
-        dismiss()
-    }
 }
-
-extension Color {
-    static let primaryColor = Color(hex: "#F18D34")
-    static let holoGreenDark = Color(hex: "#388E3C") // Android Holo Green Dark
-}
-
 
 struct CheckoutView_Previews: PreviewProvider {
     static var previews: some View {
         CheckoutView(checkoutItems: [
-            CartItem(foodId: "Cheeseburger",
-                     foodDescription: "A delicious cheeseburger",
-                     foodImage: "https://example.com/cheeseburger.jpg",
-                     foodPrice: 5.99,
-                     quantity: 2),
-            CartItem(foodId: "Pepperoni Pizza",
-                     foodDescription: "Spicy pepperoni pizza",
-                     foodImage: "https://example.com/pepperoni.jpg",
-                     foodPrice: 8.99,
-                     quantity: 1)
+            CartItem(foodId: "Burger", foodDescription: "Juicy Burger", foodImage: "https://example.com/burger.jpg", foodPrice: 7.99, quantity: 2),
+            CartItem(foodId: "Pizza", foodDescription: "Cheesy Pepperoni", foodImage: "https://example.com/pizza.jpg", foodPrice: 10.99, quantity: 1)
         ])
     }
 }

@@ -134,23 +134,7 @@ struct LoginView: View {
                 
                 Spacer()
             }
-            .navigationBarBackButtonHidden(true) // Disable default back button
-            .toolbar {
-                // Custom back navigation button
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        // Navigate back to Login (or dismiss if presented modally)
-                        destinationView = AnyView(LoginView())
-                        navigateToHome = true
-                    }) {
-                        HStack {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                        .foregroundColor(primaryColor)
-                    }
-                }
-            }
+            .navigationBarBackButtonHidden(true)
             .navigationDestination(isPresented: $navigateToHome) {
                 if let destination = destinationView {
                     destination.navigationBarBackButtonHidden(true)

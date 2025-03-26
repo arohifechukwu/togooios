@@ -25,7 +25,7 @@ struct CheckboxToggleStyle: ToggleStyle {
 }
 
 struct SignupView: View {
-    @Environment(\.dismiss) var dismiss  // To dismiss the view via custom back button
+    @Environment(\.presentationMode) private var presentationMode
 
     // MARK: - State Properties for Form Inputs
     @State private var fullName: String = ""
@@ -143,9 +143,7 @@ struct SignupView: View {
             .toolbar {
                 // Custom back navigation button
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        dismiss()
-                    }) {
+                    Button(action: { presentationMode.wrappedValue.dismiss() }) {
                         HStack {
                             Image(systemName: "chevron.left")
                             Text("Back")
