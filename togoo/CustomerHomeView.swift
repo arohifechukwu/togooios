@@ -33,7 +33,6 @@ struct CustomerHomeView: View {
     @StateObject private var locationManager = LocationManager()
 
     var body: some View {
-        NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
                     headerView
@@ -68,7 +67,6 @@ struct CustomerHomeView: View {
                     bottomNavigationBar
                 }
             }
-        }
     }
 
     private var headerView: some View {
@@ -132,9 +130,15 @@ struct CustomerHomeView: View {
 
                     // 🔗 View all results link
                     if showViewAllLink {
-                        NavigationLink(
-                            destination: ViewAllView(results: allSearchResults, keyword: searchQuery)
-                        ) {
+                        Button(action: {
+                            destinationView = AnyView(
+                                ViewAllView(results: allSearchResults, keyword: searchQuery) { cartItem in
+                                    destinationView = AnyView(CheckoutView(checkoutItems: [cartItem]))
+                                    navigateToDestination = true
+                                }
+                            )
+                            navigateToDestination = true
+                        }) {
                             Text("View all \(allSearchResults.count) results")
                                 .foregroundColor(primaryColor)
                                 .padding(.horizontal)

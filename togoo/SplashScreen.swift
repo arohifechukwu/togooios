@@ -7,33 +7,47 @@
 
 
 import SwiftUI
+import FirebaseAuth
 
 struct SplashScreen: View {
     @State private var isActive = false
+    @State private var showLogin = false
 
     var body: some View {
-        if isActive {
-            LoginView() // Navigate to the login screen when isActive is true
-        } else {
-            VStack {
-                Image("logo") // Make sure "logo" is added to your Assets.xcassets
-                    .resizable()
-                    .frame(width: 250, height: 250)
-                Spacer().frame(height: 20)
-                Text("Bringing Your Cravings Home!")
-                    .font(.system(size: 22, weight: .regular, design: .default))
-                    .italic()
-                    .foregroundColor(Color.gray.opacity(0.8))
-                    .multilineTextAlignment(.center)
+        Group {
+            if isActive {
+                if showLogin {
+                    LoginView()
+                } else {
+                    // Push authenticated user into LoginView where role check occurs
+                    LoginView()
+                }
+            } else {
+                VStack {
+                    Image("logo")
+                        .resizable()
+                        .frame(width: 250, height: 250)
+                    Spacer().frame(height: 20)
+                    Text("Bringing Your Cravings Home!")
+                        .font(.system(size: 22))
+                        .italic()
+                        .foregroundColor(Color.gray.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.white)
-            .onAppear {
-                // Delay for 4 seconds then change the state to navigate away
-                DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-                    withAnimation {
-                        isActive = true
-                    }
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                // ✅ Transition to next screen
+                if Auth.auth().currentUser != nil {
+                    showLogin = false // Authenticated — LoginView will auto-redirect
+                } else {
+                    showLogin = true // Not logged in — show login form
+                }
+                withAnimation {
+                    isActive = true
                 }
             }
         }

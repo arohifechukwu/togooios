@@ -11,7 +11,7 @@ import FirebaseAuth
 import FirebaseDatabase
 
 struct CheckoutView: View {
-    @Environment(\.presentationMode) private var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     @State var checkoutItems: [CartItem]
     @State private var subtotal: Double = 0.0
@@ -26,96 +26,95 @@ struct CheckoutView: View {
     let greenColor = Color(hex: "388E3C")
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // ✅ Custom back + title bar
-                HStack {
-                    Button(action: { presentationMode.wrappedValue.dismiss() }) {                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                        .foregroundColor(primaryColor)
+        VStack(spacing: 0) {
+            // ✅ Custom back + title bar
+            HStack {
+                Button(action: { dismiss() }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
                     }
-                    Spacer()
-                    Text("Checkout")
-                        .font(.headline)
-                        .foregroundColor(.black)
-                    Spacer()
-                    Spacer().frame(width: 60) // for alignment
+                    .foregroundColor(primaryColor)
+                }
+                Spacer()
+                Text("Checkout")
+                    .font(.headline)
+                    .foregroundColor(.black)
+                Spacer()
+                Spacer().frame(width: 60) // for alignment
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+
+            // ✅ Scrollable list of checkout items
+            ScrollView {
+                VStack(spacing: 12) {
+                    ForEach($checkoutItems) { $item in
+                        CheckoutItemRow(cartItem: $item, onQuantityChanged: calculateTotal)
+                    }
+                    .onDelete(perform: deleteItems)
+
+                    Spacer(minLength: 100)
                 }
                 .padding(.horizontal)
-                .padding(.vertical, 12)
-
-                // ✅ Scrollable list of checkout items
-                ScrollView {
-                    VStack(spacing: 12) {
-                        ForEach($checkoutItems) { $item in
-                            CheckoutItemRow(cartItem: $item, onQuantityChanged: calculateTotal)
-                        }
-                        .onDelete(perform: deleteItems)
-
-                        Spacer(minLength: 100)
-                    }
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-                }
-
-                Divider()
-
-                // ✅ Static bottom section
-                VStack(spacing: 16) {
-                    VStack(spacing: 6) {
-                        HStack {
-                            Text("Subtotal")
-                            Spacer()
-                            Text("$\(subtotal, specifier: "%.2f")")
-                        }
-                        HStack {
-                            Text("GST (5%)")
-                            Spacer()
-                            Text("$\(gst, specifier: "%.2f")")
-                        }
-                        HStack {
-                            Text("QST (9.975%)")
-                            Spacer()
-                            Text("$\(qst, specifier: "%.2f")")
-                        }
-                        Divider()
-                        HStack {
-                            Text("Total")
-                                .fontWeight(.bold)
-                            Spacer()
-                            Text("$\(total, specifier: "%.2f")")
-                                .fontWeight(.bold)
-                        }
-                    }
-
-                    HStack(spacing: 12) {
-                        Button(action: proceedToPayment) {
-                            Text("Proceed to Payment")
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(greenColor)
-                                .cornerRadius(8)
-                        }
-
-                        NavigationLink(destination: CustomerHomeView()) {
-                            Text("Cancel Order")
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(primaryColor)
-                                .cornerRadius(8)
-                        }
-                    }
-                }
-                .padding()
-                .background(Color(.systemGray6))
+                .padding(.top, 8)
             }
-            .navigationBarBackButtonHidden(true)
-            .onAppear(perform: calculateTotal)
+
+            Divider()
+
+            // ✅ Static bottom section
+            VStack(spacing: 16) {
+                VStack(spacing: 6) {
+                    HStack {
+                        Text("Subtotal")
+                        Spacer()
+                        Text("$\(subtotal, specifier: "%.2f")")
+                    }
+                    HStack {
+                        Text("GST (5%)")
+                        Spacer()
+                        Text("$\(gst, specifier: "%.2f")")
+                    }
+                    HStack {
+                        Text("QST (9.975%)")
+                        Spacer()
+                        Text("$\(qst, specifier: "%.2f")")
+                    }
+                    Divider()
+                    HStack {
+                        Text("Total")
+                            .fontWeight(.bold)
+                        Spacer()
+                        Text("$\(total, specifier: "%.2f")")
+                            .fontWeight(.bold)
+                    }
+                }
+
+                HStack(spacing: 12) {
+                    Button(action: proceedToPayment) {
+                        Text("Proceed to Payment")
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(greenColor)
+                            .cornerRadius(8)
+                    }
+
+                    NavigationLink(destination: CustomerHomeView()) {
+                        Text("Cancel Order")
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(primaryColor)
+                            .cornerRadius(8)
+                    }
+                }
+            }
+            .padding()
+            .background(Color(.systemGray6))
         }
+        .navigationBarBackButtonHidden(true)
+        .onAppear(perform: calculateTotal)
     }
 
     private func calculateTotal() {

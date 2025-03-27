@@ -5,7 +5,6 @@
 //  Created by Ifechukwu Aroh on 2025-03-25.
 //
 
-
 import SwiftUI
 import FirebaseDatabase
 import FirebaseAuth
@@ -14,10 +13,8 @@ struct FoodDetailView: View {
     let foodItem: FoodItem
     @Environment(\.presentationMode) private var presentationMode
 
-    // Programmatic navigation
-    @State private var navigateToCheckout = false
+    @State private var selectedCheckoutItem: FoodItem? = nil
 
-    // Firebase cart reference
     private var cartRef: DatabaseReference? {
         guard let uid = Auth.auth().currentUser?.uid else { return nil }
         return Database.database().reference(withPath: "cart/\(uid)")
@@ -56,7 +53,6 @@ struct FoodDetailView: View {
 
                 // Action buttons
                 HStack(spacing: 20) {
-                    // Add to Cart
                     Button(action: addToCart) {
                         HStack {
                             Image("ic_add_to_cart")
@@ -71,9 +67,8 @@ struct FoodDetailView: View {
                         .cornerRadius(10)
                     }
 
-                    // Buy Now using programmatic navigation
                     Button(action: {
-                        navigateToCheckout = true
+                        selectedCheckoutItem = foodItem
                     }) {
                         HStack {
                             Image("ic_buy")
@@ -90,6 +85,27 @@ struct FoodDetailView: View {
                 }
 
                 Spacer()
+
+                // ✅ NavigationLink using item binding
+                NavigationLink(
+                    destination: selectedCheckoutItem.map {
+                        CheckoutView(checkoutItems: [
+                            CartItem(
+                                foodId: $0.id,
+                                foodDescription: $0.description,
+                                foodImage: $0.imageUrl,
+                                foodPrice: $0.price,
+                                quantity: 1
+                            )
+                        ])
+                    },
+                    isActive: Binding(
+                        get: { selectedCheckoutItem != nil },
+                        set: { if !$0 { selectedCheckoutItem = nil } }
+                    )
+                ) {
+                    EmptyView()
+                }
             }
             .padding()
             .navigationTitle("Food Detail")
@@ -105,18 +121,6 @@ struct FoodDetailView: View {
                         .foregroundColor(Color(hex: "F18D34"))
                     }
                 }
-            }
-            .navigationDestination(isPresented: $navigateToCheckout) {
-                CheckoutView(checkoutItems: [
-                    CartItem(
-                        cartItemId: nil,
-                        foodId: foodItem.id,
-                        foodDescription: foodItem.description,
-                        foodImage: foodItem.imageUrl,
-                        foodPrice: foodItem.price,
-                        quantity: 1
-                    )
-                ])
             }
         }
     }

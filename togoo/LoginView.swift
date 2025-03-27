@@ -149,9 +149,12 @@ struct LoginView: View {
             }
         }
         .onAppear {
-            // Optionally, you can check if the user is already logged in
+            if let user = Auth.auth().currentUser {
+                validateUserRole(uid: user.uid)
+            }
         }
-    }
+        
+        }
     
     // MARK: - Firebase Login Functionality
     func loginUser() {
