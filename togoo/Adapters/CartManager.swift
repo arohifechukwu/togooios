@@ -45,7 +45,8 @@ struct CartManager {
         let cartItem = CartItem(
             foodId: food.id,
             foodDescription: food.description,
-            foodImage: food.imageUrl,
+            foodImage: food.imageURL,
+            restaurantId: food.restaurantId,
             foodPrice: food.price,
             quantity: 1
         )

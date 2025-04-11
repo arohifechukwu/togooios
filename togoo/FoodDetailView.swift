@@ -11,6 +11,7 @@ import FirebaseAuth
 
 struct FoodDetailView: View {
     let foodItem: FoodItem
+    let restaurant: Restaurant
     @Environment(\.presentationMode) private var presentationMode
 
     @State private var selectedCheckoutItem: FoodItem? = nil
@@ -24,10 +25,8 @@ struct FoodDetailView: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
                 // Food image
-                AsyncImage(url: URL(string: foodItem.imageUrl)) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
+                AsyncImage(url: URL(string: foodItem.imageURL)) { image in
+                    image.resizable().scaledToFill()
                 } placeholder: {
                     Color.gray
                 }
@@ -68,7 +67,14 @@ struct FoodDetailView: View {
                     }
 
                     Button(action: {
-                        selectedCheckoutItem = foodItem
+                        fetchRestaurant(for: foodItem.restaurantId) { fetchedRestaurant in
+                            if let fetchedRestaurant = fetchedRestaurant {
+                                RestaurantHelper.setCurrentRestaurant(fetchedRestaurant)
+                                selectedCheckoutItem = foodItem
+                            } else {
+                                print("❌ Failed to fetch restaurant info")
+                            }
+                        }
                     }) {
                         HStack {
                             Image("ic_buy")
@@ -86,14 +92,14 @@ struct FoodDetailView: View {
 
                 Spacer()
 
-                // ✅ NavigationLink using item binding
                 NavigationLink(
                     destination: selectedCheckoutItem.map {
                         CheckoutView(checkoutItems: [
                             CartItem(
                                 foodId: $0.id,
                                 foodDescription: $0.description,
-                                foodImage: $0.imageUrl,
+                                foodImage: $0.imageURL,
+                                restaurantId: $0.restaurantId,
                                 foodPrice: $0.price,
                                 quantity: 1
                             )
@@ -122,6 +128,9 @@ struct FoodDetailView: View {
                     }
                 }
             }
+            .onAppear {
+                RestaurantHelper.setCurrentRestaurant(restaurant)
+            }
         }
     }
 
@@ -131,10 +140,11 @@ struct FoodDetailView: View {
         let cartItem: [String: Any] = [
             "foodId": foodItem.id,
             "foodDescription": foodItem.description,
-            "foodImage": foodItem.imageUrl,
+            "foodImage": foodItem.imageURL,
             "foodPrice": foodItem.price,
             "quantity": 1,
-            "cartItemId": newItemRef.key ?? ""
+            "cartItemId": newItemRef.key ?? "",
+            "restaurantId": foodItem.restaurantId
         ]
         newItemRef.setValue(cartItem) { error, _ in
             if error == nil {
@@ -144,15 +154,41 @@ struct FoodDetailView: View {
             }
         }
     }
+
+    private func fetchRestaurant(for restaurantId: String, completion: @escaping (Restaurant?) -> Void) {
+        let ref = Database.database().reference().child("restaurant").child(restaurantId)
+        ref.getData { error, snapshot in
+            if let data = snapshot?.value as? [String: Any],
+               let restaurant = Restaurant(dict: data, id: restaurantId) {
+                completion(restaurant)
+            } else {
+                completion(nil)
+            }
+        }
+    }
 }
 
+
 #Preview {
-    FoodDetailView(
-        foodItem: FoodItem(
-            id: "Cheeseburger",
-            description: "Juicy grilled burger",
-            imageUrl: "https://example.com/burger.jpg",
-            price: 7.99
-        )
+    let mockRestaurant = Restaurant(
+        id: "res123",
+        name: "Mock Restaurant",
+        address: "123 Mock St",
+        imageURL: "https://example.com/mock.jpg",
+        location: nil,
+        operatingHours: [:],
+        rating: 4.5,
+        distanceKm: 1.2,
+        etaMinutes: 10
     )
+
+    let mockFood = FoodItem(
+        id: "Cheeseburger",
+        description: "Juicy grilled burger",
+        imageURL: "https://example.com/burger.jpg",
+        restaurantId: "res123",
+        price: 7.99
+    )
+
+    return FoodDetailView(foodItem: mockFood, restaurant: mockRestaurant)
 }

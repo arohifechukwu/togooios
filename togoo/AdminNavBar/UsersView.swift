@@ -14,7 +14,7 @@ struct UsersView: View {
     @State private var selectedTab: Tab = .users
     @State private var navigateToDestination: Bool = false
     @State private var destinationView: AnyView? = nil
-
+    
     // Define tabs for bottom navigation
     enum Tab: String {
         case dashboard = "Dashboard"
@@ -23,7 +23,7 @@ struct UsersView: View {
         case transaction = "Transaction"
         case settings = "Settings"
     }
-
+    
     // MARK: - Color Palette
     let primaryColor = Color(hex: "F18D34") // Dark Orange
     let primaryVariant = Color(hex: "E67E22") // Slightly Darker Orange
@@ -32,7 +32,7 @@ struct UsersView: View {
     let darkGray = Color(hex: "757575")
     let white = Color.white
     let black = Color.black
-
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -43,7 +43,7 @@ struct UsersView: View {
                     .frame(maxWidth: .infinity)
                     .padding(16)
                     .background(primaryColor)
-
+                
                 // Card View for User List
                 ZStack {
                     if users.isEmpty {
@@ -72,7 +72,7 @@ struct UsersView: View {
                 .padding(.horizontal, 8)
                 .padding(.vertical, 8)
                 .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
-
+                
                 // Bottom Navigation Bar
                 HStack {
                     Spacer()
@@ -83,7 +83,7 @@ struct UsersView: View {
                     }
                     Spacer()
                     AdminBottomNavItem(imageName: "ic_users", title: Tab.users.rawValue, isSelected:
-                        selectedTab == .users) {
+                                        selectedTab == .users) {
                         selectedTab = .users
                         destinationView = AnyView(UsersView())
                         navigateToDestination = true
@@ -126,45 +126,83 @@ struct UsersView: View {
             }
         }
     }
-
+    
     // MARK: - Fetch Users from Realtime Database
+    //    func fetchUsers() {
+    //        let dbRef = Database.database().reference()
+    //        var allUsers: [User] = []
+    //        let group = DispatchGroup()
+    //        let nodes = ["customer", "driver", "restaurant", "admin"]
+    //
+    //        for node in nodes {
+    //            group.enter()
+    //            dbRef.child(node).observeSingleEvent(of: .value) { snapshot in
+    //                for child in snapshot.children {
+    //                    if let snap = child as? DataSnapshot,
+    //                       let userData = snap.value as? [String: Any] {
+    //                        let user = User(
+    //                            userId: snap.key,
+    //                            name: userData["name"] as? String ?? "",
+    //                            email: userData["email"] as? String ?? "",
+    //                            role: node.capitalized,
+    //                            status: userData["status"] as? String ?? ""
+    //                        )
+    //                        allUsers.append(user)
+    //                    }
+    //                }
+    //                group.leave()
+    //            } withCancel: { _ in
+    //                group.leave()
+    //            }
+    //        }
+    //
+    //        group.notify(queue: .main) {
+    //            users = allUsers
+    //        }
+    //    }
+    //}
+    
     func fetchUsers() {
         let dbRef = Database.database().reference()
         var allUsers: [User] = []
         let group = DispatchGroup()
         let nodes = ["customer", "driver", "restaurant", "admin"]
-
+        
         for node in nodes {
             group.enter()
-            dbRef.child(node).observeSingleEvent(of: .value) { snapshot in
-                for child in snapshot.children {
-                    if let snap = child as? DataSnapshot,
-                       let userData = snap.value as? [String: Any] {
+            dbRef.child(node).observeSingleEvent(of: .value, with: { snapshot in
+                for case let child as DataSnapshot in snapshot.children {
+                    if let userData = child.value as? [String: Any] {
                         let user = User(
-                            userId: snap.key,
+                            userId: child.key,
                             name: userData["name"] as? String ?? "",
                             email: userData["email"] as? String ?? "",
+                            phone: userData["phone"] as? String ?? "",
+                            address: userData["address"] as? String ?? "",
                             role: node.capitalized,
-                            status: userData["status"] as? String ?? ""
+                            status: userData["status"] as? String ?? "",
+                            imageURL: userData["imageURL"] as? String ?? ""
                         )
                         allUsers.append(user)
                     }
                 }
                 group.leave()
-            } withCancel: { _ in
+            }, withCancel: { error in
+                print("❌ Error fetching users from \(node): \(error.localizedDescription)")
                 group.leave()
-            }
+            })
         }
-
+        
         group.notify(queue: .main) {
-            users = allUsers
+            self.users = allUsers
         }
     }
-}
-
-// MARK: - Preview
-struct UsersView_Previews: PreviewProvider {
-    static var previews: some View {
-        UsersView()
+    
+    
+    // MARK: - Preview
+    struct UsersView_Previews: PreviewProvider {
+        static var previews: some View {
+            UsersView()
+        }
     }
 }

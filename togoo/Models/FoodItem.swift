@@ -1,40 +1,49 @@
-//
-//  FoodItem.swift
-//  togoo
-//
-//  Created by Ifechukwu Aroh on 2025-03-25.
-//
-
-
 import Foundation
 
-struct FoodItem: Codable, Identifiable {
-    let id: String       // UID (e.g., "Apple Pie")
-    let description: String // Description of the food item
-    let imageUrl: String
-    let price: Double
+struct FoodItem: Identifiable, Codable {
+    var id: String                  // UID
+    var description: String
+    var imageURL: String
+    var price: Double
+    var restaurantId: String
+    var parentNode: String?        // e.g., "menu", "Top Picks"
+    var category: String?          // e.g., "Pizza", "Burgers" (nil for non-menu items)
 
-    // MARK: - Initializers
-
-    init(id: String, description: String, imageUrl: String, price: Double) {
+    // MARK: - Initializer
+    init(id: String, description: String, imageURL: String, restaurantId: String, price: Double, parentNode: String? = nil, category: String? = nil) {
         self.id = id
         self.description = description
-        self.imageUrl = imageUrl
+        self.imageURL = imageURL
+        self.restaurantId = restaurantId
         self.price = price
+        self.parentNode = parentNode
+        self.category = category
     }
 
-    // Optionally, if you need to initialize from a dictionary (for example, from Firebase)
-    init?(from dictionary: [String: Any], id: String) {
+    // MARK: - Firebase-style initializer
+    init?(from dictionary: [String: Any], id: String, restaurantId: String) {
         guard let description = dictionary["description"] as? String,
-              let imageUrl = dictionary["imageURL"] as? String,
-              let price = dictionary["price"] as? Double
-        else {
+              let imageURL = dictionary["imageURL"] as? String,
+              let priceRaw = dictionary["price"] else {
             return nil
         }
+
+        let price: Double
+        if let priceDouble = priceRaw as? Double {
+            price = priceDouble
+        } else if let priceString = priceRaw as? String, let parsedPrice = Double(priceString) {
+            price = parsedPrice
+        } else {
+            print("Invalid price format: \(priceRaw)")
+            price = 0.0
+        }
+
         self.id = id
         self.description = description
-        self.imageUrl = imageUrl
+        self.imageURL = imageURL
+        self.restaurantId = restaurantId
         self.price = price
+        self.parentNode = dictionary["parentNode"] as? String
+        self.category = dictionary["category"] as? String
     }
 }
-

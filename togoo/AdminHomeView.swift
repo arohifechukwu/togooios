@@ -16,7 +16,7 @@ struct AdminHomeView: View {
     @State private var navigateToHome: Bool = false
     @State private var destinationView: AnyView? = nil
     @State private var selectedTab: Tab = .dashboard
-
+    
     // Define bottom navigation tabs
     enum Tab: String {
         case dashboard = "Dashboard"
@@ -25,7 +25,7 @@ struct AdminHomeView: View {
         case transaction = "Transaction"
         case settings = "Settings"
     }
-
+    
     // MARK: - Color Palette
     let primaryColor = Color(hex: "F18D34") // Dark Orange
     let primaryVariant = Color(hex: "E67E22") // Slightly Darker Orange
@@ -34,7 +34,7 @@ struct AdminHomeView: View {
     let darkGray = Color(hex: "757575")
     let white = Color.white
     let black = Color.black
-
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -45,7 +45,7 @@ struct AdminHomeView: View {
                     .frame(maxWidth: .infinity)
                     .padding(16)
                     .background(primaryColor)
-
+                
                 // Card View for User List
                 ZStack {
                     if users.isEmpty {
@@ -74,7 +74,7 @@ struct AdminHomeView: View {
                 .padding(.horizontal, 8)
                 .padding(.vertical, 8)
                 .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
-
+                
                 // Bottom Navigation Bar
                 HStack {
                     Spacer()
@@ -127,47 +127,55 @@ struct AdminHomeView: View {
             }
         }
     }
-
-    // MARK: - Fetch Approved Users
+    
+ 
+    //}
+    
     func fetchApprovedUsers() {
         let dbRef = Database.database().reference()
         var allUsers: [User] = []
         let group = DispatchGroup()
         let nodes = ["customer", "driver", "restaurant"]
-
+        
         for node in nodes {
             group.enter()
-            dbRef.child(node).observeSingleEvent(of: .value) { snapshot in
-                for child in snapshot.children {
-                    if let snap = child as? DataSnapshot,
-                       let userData = snap.value as? [String: Any],
+            dbRef.child(node).observeSingleEvent(of: .value, with: { snapshot in
+                for case let child as DataSnapshot in snapshot.children {
+                    if let userData = child.value as? [String: Any],
                        let status = userData["status"] as? String,
                        status.lowercased() == "approved" {
+                        
                         let user = User(
-                            userId: snap.key,
+                            userId: child.key,
                             name: userData["name"] as? String ?? "",
                             email: userData["email"] as? String ?? "",
-                            role: userData["role"] as? String ?? "",
-                            status: status
+                            phone: userData["phone"] as? String ?? "",
+                            address: userData["address"] as? String ?? "",
+                            role: userData["role"] as? String ?? node,
+                            status: status,
+                            imageURL: userData["imageURL"] as? String ?? ""
                         )
+                        
                         allUsers.append(user)
                     }
                 }
                 group.leave()
-            } withCancel: { _ in
+            }, withCancel: { error in
+                print("❌ Error fetching from node \(node): \(error.localizedDescription)")
                 group.leave()
-            }
+            })
         }
-
+        
         group.notify(queue: .main) {
-            users = allUsers
+            self.users = allUsers
         }
     }
-}
-
-// MARK: - Preview
-struct AdminHomeView_Previews: PreviewProvider {
-    static var previews: some View {
-        AdminHomeView()
+    
+    
+    // MARK: - Preview
+    struct AdminHomeView_Previews: PreviewProvider {
+        static var previews: some View {
+            AdminHomeView()
+        }
     }
 }

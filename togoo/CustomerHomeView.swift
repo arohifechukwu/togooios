@@ -1,12 +1,4 @@
-//
-//  CustomerHomeView.swift
-//  togoo
-//
-//  Created by Ifechukwu Aroh on 2025-03-02.
-//
 
-
-  
 import SwiftUI
 import CoreLocation
 import FirebaseAuth
@@ -21,6 +13,7 @@ struct CustomerHomeView: View {
     @State private var topPicks: [FoodItem] = []
     @State private var allSearchResults: [FoodItem] = []
     @State private var showViewAllLink: Bool = false
+    @State private var notificationCount: Int = 0
 
     @State private var navigateToDestination: Bool = false
     @State private var destinationView: AnyView? = nil
@@ -33,40 +26,41 @@ struct CustomerHomeView: View {
     @StateObject private var locationManager = LocationManager()
 
     var body: some View {
-            ScrollView {
-                VStack(spacing: 14) {
-                    headerView
-                    searchBar
-                    searchResultsView
-                    featuredCategoryScrollView
-                    specialOffersView
-                    topPicksView
-                }
-                .padding(.bottom, 16)
+        ScrollView {
+            VStack(spacing: 14) {
+                headerView
+                searchBar
+                searchResultsView
+                featuredCategoryScrollView
+                specialOffersView
+                topPicksView
             }
-            .background(lightGray.edgesIgnoringSafeArea(.all))
-            .navigationBarBackButtonHidden(true)
-            .onAppear {
-                locationText = locationManager.locationName
-                fetchFeaturedCategories()
-                fetchSpecialOffers()
-                fetchTopPicks()
-                locationManager.startUpdating()
+            .padding(.bottom, 16)
+        }
+        .background(lightGray.edgesIgnoringSafeArea(.all))
+        .navigationBarBackButtonHidden(true)
+        .onAppear {
+            locationText = locationManager.locationName
+            fetchFeaturedCategories()
+            fetchSpecialOffers()
+            fetchTopPicks()
+            locationManager.startUpdating()
+            listenForNotificationUpdates()
+        }
+        .onChange(of: locationManager.location) { newLocation in
+            handleLocationChange(newLocation)
+        }
+        .onReceive(locationManager.$locationName) { updatedName in
+            locationText = updatedName
+        }
+        .navigationDestination(isPresented: $navigateToDestination) {
+            destinationView
+        }
+        .toolbar {
+            ToolbarItem(placement: .bottomBar) {
+                bottomNavigationBar
             }
-            .onChange(of: locationManager.location) { newLocation in
-                handleLocationChange(newLocation)
-            }
-            .onReceive(locationManager.$locationName) { updatedName in
-                locationText = updatedName
-            }
-            .navigationDestination(isPresented: $navigateToDestination) {
-                destinationView
-            }
-            .toolbar {
-                ToolbarItem(placement: .bottomBar) {
-                    bottomNavigationBar
-                }
-            }
+        }
     }
 
     private var headerView: some View {
@@ -74,6 +68,22 @@ struct CustomerHomeView: View {
             Text(locationText)
                 .font(.subheadline)
             Spacer()
+            ZStack(alignment: .topTrailing) {
+                NavigationLink(destination: NotificationsView()) {
+                    Image("ic_notification")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                }
+                if notificationCount > 0 {
+                    Text("\(notificationCount)")
+                        .font(.caption2)
+                        .foregroundColor(.white)
+                        .padding(5)
+                        .background(Color.red)
+                        .clipShape(Circle())
+                        .offset(x: 8, y: -8)
+                }
+            }
             NavigationLink(destination: CartView()) {
                 Image("ic_cart")
                     .resizable()
@@ -100,58 +110,71 @@ struct CustomerHomeView: View {
                 }
             }
     }
-    
+
     private var searchResultsView: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 8) {
             if !searchSuggestions.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    List(searchSuggestions) { food in
-                        NavigationLink(destination: FoodDetailView(foodItem: food)) {
-                            HStack {
-                                AsyncImage(url: URL(string: food.imageUrl)) { image in
-                                    image.resizable()
-                                } placeholder: {
-                                    Color.gray
-                                }
-                                .frame(width: 50, height: 50)
-                                .cornerRadius(6)
+                searchSuggestionList
 
-                                VStack(alignment: .leading) {
-                                    Text(food.id)
-                                        .font(.headline)
-                                    Text(food.description)
-                                        .font(.subheadline)
-                                }
-                            }
-                        }
-                    }
-                    .listStyle(PlainListStyle())
-                    .frame(height: CGFloat(searchSuggestions.count * 70)) // Adjust based on your row height
-
-                    // 🔗 View all results link
-                    if showViewAllLink {
-                        Button(action: {
-                            destinationView = AnyView(
-                                ViewAllView(results: allSearchResults, keyword: searchQuery) { cartItem in
-                                    destinationView = AnyView(CheckoutView(checkoutItems: [cartItem]))
-                                    navigateToDestination = true
-                                }
-                            )
-                            navigateToDestination = true
-                        }) {
-                            Text("View all \(allSearchResults.count) results")
-                                .foregroundColor(primaryColor)
-                                .padding(.horizontal)
-                                .padding(.top, -8)
-                                .font(.subheadline.bold())
-                        }
+                if showViewAllLink {
+                    viewAllResultsButton
+                }
+            }
+        }
+        .padding(.horizontal)
+    }
+    
+    private var searchSuggestionList: some View {
+        List(searchSuggestions) { food in
+            Button {
+                fetchRestaurant(for: food.restaurantId) { restaurant in
+                    if let restaurant = restaurant {
+                        destinationView = AnyView(FoodDetailView(foodItem: food, restaurant: restaurant))
+                        navigateToDestination = true
                     }
                 }
-                .padding(.horizontal)
+            } label: {
+                HStack {
+                    AsyncImage(url: URL(string: food.imageURL)) { image in
+                        image.resizable()
+                    } placeholder: {
+                        Color.gray
+                    }
+                    .frame(width: 50, height: 50)
+                    .cornerRadius(6)
+
+                    VStack(alignment: .leading) {
+                        Text(food.id).font(.headline)
+                        Text(food.description).font(.subheadline)
+                    }
+                }
             }
+        }
+        .listStyle(PlainListStyle())
+        .frame(height: CGFloat(searchSuggestions.count * 70))
+    }
+    
+    
+    private var viewAllResultsButton: some View {
+        Button(action: {
+            destinationView = AnyView(
+                ViewAllView(results: allSearchResults, keyword: searchQuery) { cartItem in
+                    destinationView = AnyView(CheckoutView(checkoutItems: [cartItem]))
+                    navigateToDestination = true
+                }
+            )
+            navigateToDestination = true
+        }) {
+            Text("View all \(allSearchResults.count) results")
+                .foregroundColor(primaryColor)
+                .padding(.horizontal)
+                .padding(.top, -8)
+                .font(.subheadline.bold())
         }
     }
 
+    
+    
     private var featuredCategoryScrollView: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Featured Categories")
@@ -169,14 +192,25 @@ struct CustomerHomeView: View {
                                         .resizable()
                                         .frame(width: 40, height: 40)
                                         .clipShape(Circle())
+                                } else if category.hasImageUrl,
+                                          let urlString = category.imageUrl,
+                                          let url = URL(string: urlString) {
+                                    AsyncImage(url: url) { image in
+                                        image.resizable()
+                                    } placeholder: {
+                                        Color.gray
+                                    }
+                                    .frame(width: 40, height: 40)
+                                    .clipShape(Circle())
                                 } else {
                                     Color.gray
                                         .frame(width: 40, height: 40)
                                         .clipShape(Circle())
                                 }
+
                                 Text(category.name)
                                     .font(.caption)
-                                    .foregroundColor(.darkGray) // 
+                                    .foregroundColor(.gray)
                             }
                             .padding(8)
                             .background(Color.white)
@@ -189,59 +223,82 @@ struct CustomerHomeView: View {
             }
         }
     }
+    
+    
+    
+    // MARK: - Helper: Map imageResId to SwiftUI asset name
+    private func localImageName(for resId: Int?) -> String? {
+        guard let resId = resId else { return nil }
+        
+        switch resId {
+            case 1: return "pizza"
+            case 2: return "burger"
+            case 3: return "sushi"
+            case 4: return "spaghetti"
+            case 5: return "shrimp"
+            case 6: return "salad"
+            case 7: return "tacos"
+            case 8: return "cupcake"
+            default: return nil
+        }
+    }
 
     private var specialOffersView: some View {
         VStack(alignment: .leading) {
-            Text("Special Offers")
-                .font(.headline)
-                .padding(.leading)
+            Text("Special Offers").font(.headline).padding(.leading)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(specialOffers) { offer in
-                        NavigationLink(destination: FoodDetailView(foodItem: offer)) {
+                        Button {
+                            fetchRestaurant(for: offer.restaurantId) { restaurant in
+                                if let restaurant = restaurant {
+                                    destinationView = AnyView(FoodDetailView(foodItem: offer, restaurant: restaurant))
+                                    navigateToDestination = true
+                                }
+                            }
+                        } label: {
                             FoodItemCard(
                                 foodName: offer.id,
                                 foodDescription: offer.description,
                                 foodPrice: offer.price,
-                                foodImageURL: offer.imageUrl,
-                                onAddToCart: {
-                                    addToCart(food: offer)
-                                },
-                                onBuyNow: {
-                                    navigateToCheckout(with: offer)
-                                }
+                                foodImageURL: offer.imageURL,
+                                onAddToCart: { addToCart(food: offer) },
+                                onBuyNow: { navigateToCheckout(with: offer) }
                             )
                         }
                     }
-                }.padding(.horizontal)
+                }
+                .padding(.horizontal)
             }
         }
     }
 
     private var topPicksView: some View {
         VStack(alignment: .leading) {
-            Text("Top Picks")
-                .font(.headline)
-                .padding(.leading)
+            Text("Top Picks").font(.headline).padding(.leading)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(topPicks) { pick in
-                        NavigationLink(destination: FoodDetailView(foodItem: pick)) {
+                        Button {
+                            fetchRestaurant(for: pick.restaurantId) { restaurant in
+                                if let restaurant = restaurant {
+                                    destinationView = AnyView(FoodDetailView(foodItem: pick, restaurant: restaurant))
+                                    navigateToDestination = true
+                                }
+                            }
+                        } label: {
                             FoodItemCard(
                                 foodName: pick.id,
                                 foodDescription: pick.description,
                                 foodPrice: pick.price,
-                                foodImageURL: pick.imageUrl,
-                                onAddToCart: {
-                                    addToCart(food: pick)
-                                },
-                                onBuyNow: {
-                                    navigateToCheckout(with: pick)
-                                }
+                                foodImageURL: pick.imageURL,
+                                onAddToCart: { addToCart(food: pick) },
+                                onBuyNow: { navigateToCheckout(with: pick) }
                             )
                         }
                     }
-                }.padding(.horizontal)
+                }
+                .padding(.horizontal)
             }
         }
     }
@@ -273,6 +330,7 @@ struct CustomerHomeView: View {
         .padding(.vertical, 8)
         .background(white)
     }
+    
 
     private func handleLocationChange(_ newLocation: CLLocation?) {
         if let loc = newLocation {
@@ -282,87 +340,79 @@ struct CustomerHomeView: View {
 
     private func updateUserLocation(latitude: Double, longitude: Double) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
-        dbRef.child("customer").child(uid).observeSingleEvent(of: .value) { snapshot in
-            if snapshot.exists() {
-                dbRef.child("customer").child(uid).child("location").setValue([
-                    "latitude": latitude,
-                    "longitude": longitude
-                ]) { error, _ in
-                    if let error = error {
-                        print("Failed to update customer location: \(error.localizedDescription)")
-                    } else {
-                        print("Customer location updated successfully")
-                    }
-                }
+        dbRef.child("customer").child(uid).child("location").setValue([
+            "latitude": latitude,
+            "longitude": longitude
+        ])
+    }
+    
+    private func fetchRestaurant(for restaurantId: String, completion: @escaping (Restaurant?) -> Void) {
+        dbRef.child("restaurant").child(restaurantId).observeSingleEvent(of: .value) { snapshot in
+            if let data = snapshot.value as? [String: Any],
+               let restaurant = Restaurant(dict: data, id: restaurantId) {
+                completion(restaurant)
+            } else {
+                completion(nil)
             }
         }
     }
-    
-    
-    // Adds a food item to Firebase cart
+
     private func addToCart(food: FoodItem) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
-
-        // Reference: cart/<uid>/autoId
-        let ref = Database.database().reference(withPath: "cart").child(uid).childByAutoId()
-
+        let ref = dbRef.child("cart").child(uid).childByAutoId()
         let cartItem: [String: Any] = [
             "foodId": food.id,
             "foodDescription": food.description,
-            "foodImage": food.imageUrl,
+            "foodImage": food.imageURL,
             "foodPrice": food.price,
             "quantity": 1,
-            "cartItemId": ref.key ?? "" // Optional, helpful for delete
+            "cartItemId": ref.key ?? ""
         ]
-
-        ref.setValue(cartItem) { error, _ in
-            if let error = error {
-                print("❌ Failed to add to cart: \(error.localizedDescription)")
-            } else {
-                print("✅ Added to cart under UID \(uid) with key \(ref.key ?? "N/A")")
-            }
-        }
+        ref.setValue(cartItem)
     }
 
-    // Navigates to CheckoutView with the selected item
     private func navigateToCheckout(with food: FoodItem) {
         let checkoutItem = CartItem(
             foodId: food.id,
             foodDescription: food.description,
-            foodImage: food.imageUrl,
+            foodImage: food.imageURL,
+            restaurantId: food.restaurantId,
             foodPrice: food.price,
             quantity: 1
         )
         destinationView = AnyView(CheckoutView(checkoutItems: [checkoutItem]))
         navigateToDestination = true
     }
-    
 
     private func searchMenuItems(query: String) {
         let queryLower = query.lowercased()
-        dbRef.child("restaurant").observeSingleEvent(of: .value) { snapshot in
+        
+        dbRef.child("restaurant").observeSingleEvent(of: .value, with: { snapshot in
             var prefixMatches: [FoodItem] = []
             var substringMatches: [FoodItem] = []
 
-            for case let restaurantSnap as DataSnapshot in snapshot.children {
+            for child in snapshot.children.allObjects {
+                guard let restaurantSnap = child as? DataSnapshot else { continue }
+
                 let menuSnap = restaurantSnap.childSnapshot(forPath: "menu")
-                for categorySnap in menuSnap.children {
-                    if let category = categorySnap as? DataSnapshot {
-                        for foodSnap in category.children {
-                            if let foodData = foodSnap as? DataSnapshot {
-                                let id = foodData.key.lowercased()
-                                let description = foodData.childSnapshot(forPath: "description").value as? String ?? ""
-                                let imageUrl = foodData.childSnapshot(forPath: "imageURL").value as? String ?? ""
-                                let price = foodData.childSnapshot(forPath: "price").value as? Double ?? 0.0
+                for menuChild in menuSnap.children.allObjects {
+                    guard let categorySnap = menuChild as? DataSnapshot else { continue }
 
-                                let foodItem = FoodItem(id: foodData.key, description: description, imageUrl: imageUrl, price: price)
+                    for foodChild in categorySnap.children.allObjects {
+                        guard let foodSnap = foodChild as? DataSnapshot else { continue }
 
-                                if id.hasPrefix(queryLower) {
-                                    prefixMatches.append(foodItem)
-                                } else if id.contains(queryLower) {
-                                    substringMatches.append(foodItem)
-                                }
-                            }
+                        let id = foodSnap.key.lowercased()
+                        let description = foodSnap.childSnapshot(forPath: "description").value as? String ?? ""
+                        let imageURL = foodSnap.childSnapshot(forPath: "imageURL").value as? String ?? ""
+                        let price = foodSnap.childSnapshot(forPath: "price").value as? Double ?? 0.0
+                        let restaurantId = restaurantSnap.key // capture restaurant ID if needed
+
+                        let foodItem = FoodItem(id: foodSnap.key, description: description, imageURL: imageURL, restaurantId: restaurantId, price: price)
+
+                        if id.hasPrefix(queryLower) {
+                            prefixMatches.append(foodItem)
+                        } else if id.contains(queryLower) {
+                            substringMatches.append(foodItem)
                         }
                     }
                 }
@@ -371,17 +421,17 @@ struct CustomerHomeView: View {
             let mergedResults = prefixMatches + substringMatches
 
             DispatchQueue.main.async {
-                // Show top 5
                 self.searchSuggestions = Array(mergedResults.prefix(5))
-
-                // Store all results in a global var if needed for ViewAllView
                 self.allSearchResults = mergedResults
                 self.showViewAllLink = mergedResults.count > 5
             }
-        }
+        }, withCancel: { error in
+            print("❌ Failed to fetch search results: \(error.localizedDescription)")
+        })
     }
-    
 
+
+    
     private func fetchFeaturedCategories() {
         featuredCategories = [
             FoodCategory(name: "Pizza", imageName: "pizza"),
@@ -394,47 +444,84 @@ struct CustomerHomeView: View {
             FoodCategory(name: "Desserts", imageName: "cupcake")
         ]
     }
+    
 
     private func fetchSpecialOffers() {
-        dbRef.child("restaurant").observeSingleEvent(of: .value) { snapshot in
+        dbRef.child("restaurant").observeSingleEvent(of: .value, with: { snapshot in
             var offers: [FoodItem] = []
-            for case let restaurantSnap as DataSnapshot in snapshot.children {
+
+            for child in snapshot.children {
+                guard let restaurantSnap = child as? DataSnapshot else { continue }
+                let restaurantId = restaurantSnap.key
+
                 let offersSnap = restaurantSnap.childSnapshot(forPath: "Special Offers")
-                for case let itemSnap as DataSnapshot in offersSnap.children {
+                for offerChild in offersSnap.children {
+                    guard let itemSnap = offerChild as? DataSnapshot else { continue }
+
                     let id = itemSnap.key
                     let description = itemSnap.childSnapshot(forPath: "description").value as? String
                     let imageUrl = itemSnap.childSnapshot(forPath: "imageURL").value as? String
                     let price = itemSnap.childSnapshot(forPath: "price").value as? Double
+
                     if let description = description, let imageUrl = imageUrl, let price = price {
-                        offers.append(FoodItem(id: id, description: description, imageUrl: imageUrl, price: price))
+                        offers.append(FoodItem(id: id, description: description, imageURL: imageUrl, restaurantId: restaurantId, price: price))
                     }
                 }
             }
+
             DispatchQueue.main.async {
                 specialOffers = offers
             }
-        }
+
+        }, withCancel: { error in
+            print("❌ Failed to fetch special offers: \(error.localizedDescription)")
+        })
     }
 
     private func fetchTopPicks() {
-        dbRef.child("restaurant").observeSingleEvent(of: .value) { snapshot in
+        dbRef.child("restaurant").observeSingleEvent(of: .value, with: { snapshot in
             var picks: [FoodItem] = []
+
             for case let restaurantSnap as DataSnapshot in snapshot.children {
+                let restaurantId = restaurantSnap.key
                 let picksSnap = restaurantSnap.childSnapshot(forPath: "Top Picks")
+
                 for case let itemSnap as DataSnapshot in picksSnap.children {
                     let id = itemSnap.key
                     let description = itemSnap.childSnapshot(forPath: "description").value as? String
                     let imageUrl = itemSnap.childSnapshot(forPath: "imageURL").value as? String
                     let price = itemSnap.childSnapshot(forPath: "price").value as? Double
+
                     if let description = description, let imageUrl = imageUrl, let price = price {
-                        picks.append(FoodItem(id: id, description: description, imageUrl: imageUrl, price: price))
+                        picks.append(FoodItem(id: id, description: description, imageURL: imageUrl, restaurantId: restaurantId, price: price))
                     }
                 }
             }
+
             DispatchQueue.main.async {
                 topPicks = picks
             }
-        }
+
+        }, withCancel: { error in
+            print("❌ Failed to fetch top picks: \(error.localizedDescription)")
+        })
+    }
+
+    private func listenForNotificationUpdates() {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        dbRef.child("orders")
+            .queryOrdered(byChild: "customer/id")
+            .queryEqual(toValue: uid)
+            .observe(.value) { snapshot in
+                var count = 0
+                for child in snapshot.children {
+                    if let orderSnap = child as? DataSnapshot,
+                       orderSnap.hasChild("updateLogs") {
+                        count += Int(orderSnap.childSnapshot(forPath: "updateLogs").childrenCount)
+                    }
+                }
+                notificationCount = count
+            }
     }
 }
 

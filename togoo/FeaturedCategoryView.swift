@@ -12,12 +12,13 @@ import FirebaseAuth
 
 struct FeaturedCategoryView: View {
     let selectedCategory: String
-    @Environment(\.presentationMode) private var presentationMode
+    @Environment(\.dismiss) private var dismiss
+
     @State private var foodItems: [FoodItem] = []
     @State private var showNoItemsAlert: Bool = false
 
-    @State private var selectedFoodItem: FoodItem? = nil
-    @State private var selectedCheckoutItem: FoodItem? = nil
+    @State private var navigateToDestination = false
+    @State private var destinationView: AnyView? = nil
 
     private var dbRef: DatabaseReference {
         Database.database().reference(withPath: "restaurant")
@@ -25,32 +26,31 @@ struct FeaturedCategoryView: View {
 
     let primaryColor = Color(hex: "F18D34")
     let darkGray = Color(hex: "757575")
+    let lightGray = Color(hex: "F5F5F5")
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Header
+                // Toolbar
                 HStack {
-                    Button(action: { presentationMode.wrappedValue.dismiss() }) {
+                    Button(action: { dismiss() }) {
                         Image(systemName: "chevron.left")
                         Text("Back")
                     }
-                    .foregroundColor(primaryColor)
+                    .foregroundColor(.white)
 
                     Spacer()
 
-                    Text(selectedCategory)
+                    Text("Featured Category")
+                        .foregroundColor(.white)
                         .font(.headline)
-                        .foregroundColor(.black)
-                        .padding(8)
-                        .cornerRadius(6)
 
                     Spacer()
-                    Spacer().frame(width: 44)
+                    Spacer().frame(width: 60)
                 }
                 .padding()
+                .background(primaryColor)
 
-                // Content
                 if foodItems.isEmpty {
                     Spacer()
                     Text("No items found for \(selectedCategory)")
@@ -62,11 +62,16 @@ struct FeaturedCategoryView: View {
                         LazyVStack(spacing: 16) {
                             ForEach(foodItems) { food in
                                 VStack(alignment: .leading, spacing: 10) {
-                                    Button(action: {
-                                        selectedFoodItem = food
-                                    }) {
+                                    Button {
+                                        fetchRestaurant(for: food.restaurantId) { restaurant in
+                                            if let restaurant = restaurant {
+                                                destinationView = AnyView(FoodDetailView(foodItem: food, restaurant: restaurant))
+                                                navigateToDestination = true
+                                            }
+                                        }
+                                    } label: {
                                         VStack(alignment: .leading, spacing: 10) {
-                                            AsyncImage(url: URL(string: food.imageUrl)) { image in
+                                            AsyncImage(url: URL(string: food.imageURL)) { image in
                                                 image.resizable().scaledToFill()
                                             } placeholder: {
                                                 Color.gray
@@ -93,34 +98,32 @@ struct FeaturedCategoryView: View {
 
                                         Spacer()
 
-                                        Button(action: {
-                                            selectedCheckoutItem = food
-                                        }) {
-                                            HStack {
-                                                Image("ic_buy")
-                                                    .resizable()
-                                                    .frame(width: 20, height: 20)
-                                                Text("Buy Now")
+                                        Button {
+                                            fetchRestaurant(for: food.restaurantId) { restaurant in
+                                                if let restaurant = restaurant {
+                                                    destinationView = AnyView(CheckoutView(checkoutItems: [CartItem(
+                                                        foodId: food.id,
+                                                        foodDescription: food.description,
+                                                        foodImage: food.imageURL,
+                                                        restaurantId: food.restaurantId,
+                                                        foodPrice: food.price,
+                                                        quantity: 1
+                                                    )]))
+                                                    navigateToDestination = true
+                                                }
                                             }
-                                            .foregroundColor(.white)
-                                            .padding(8)
-                                            .background(primaryColor)
-                                            .cornerRadius(8)
+                                        } label: {
+                                            Image("ic_buy")
+                                                .resizable()
+                                                .frame(width: 20, height: 20)
                                         }
 
-                                        Button(action: {
+                                        Button {
                                             addToCart(food: food)
-                                        }) {
-                                            HStack {
-                                                Image("ic_add_to_cart")
-                                                    .resizable()
-                                                    .frame(width: 20, height: 20)
-                                                Text("Add to Cart")
-                                            }
-                                            .foregroundColor(.white)
-                                            .padding(8)
-                                            .background(primaryColor)
-                                            .cornerRadius(8)
+                                        } label: {
+                                            Image("ic_add_to_cart")
+                                                .resizable()
+                                                .frame(width: 20, height: 20)
                                         }
                                     }
                                 }
@@ -135,43 +138,35 @@ struct FeaturedCategoryView: View {
                     }
                 }
 
-                // Navigation to FoodDetailView
-                NavigationLink(destination: selectedFoodItem.map { FoodDetailView(foodItem: $0) }, isActive: Binding(
-                    get: { selectedFoodItem != nil },
-                    set: { if !$0 { selectedFoodItem = nil } }
-                )) {
-                    EmptyView()
-                }
-
-                // Navigation to CheckoutView
-                NavigationLink(destination: selectedCheckoutItem.map {
-                    CheckoutView(checkoutItems: [
-                        CartItem(
-                            foodId: $0.id,
-                            foodDescription: $0.description,
-                            foodImage: $0.imageUrl,
-                            foodPrice: $0.price,
-                            quantity: 1
-                        )
-                    ])
-                }, isActive: Binding(
-                    get: { selectedCheckoutItem != nil },
-                    set: { if !$0 { selectedCheckoutItem = nil } }
-                )) {
+                NavigationLink(
+                    destination: destinationView,
+                    isActive: $navigateToDestination
+                ) {
                     EmptyView()
                 }
             }
-            .background(Color(hex: "F5F5F5"))
+            .background(lightGray)
             .navigationBarBackButtonHidden(true)
             .alert("No Items", isPresented: $showNoItemsAlert) {
-                Button("OK", role: .cancel) {
-                    presentationMode.wrappedValue.dismiss()
-                }
+                Button("OK", role: .cancel) { dismiss() }
             } message: {
                 Text("No items found for \(selectedCategory).")
             }
             .onAppear {
                 fetchCategoryItems(for: selectedCategory)
+            }
+        }
+    }
+
+    private func fetchRestaurant(for restaurantId: String, completion: @escaping (Restaurant?) -> Void) {
+        let ref = Database.database().reference().child("restaurant").child(restaurantId)
+        ref.getData { error, snapshot in
+            if let data = snapshot?.value as? [String: Any],
+               let restaurant = Restaurant(dict: data, id: restaurantId) {
+                completion(restaurant)
+            } else {
+                print("❌ Failed to fetch restaurant for ID: \(restaurantId)")
+                completion(nil)
             }
         }
     }
@@ -184,42 +179,49 @@ struct FeaturedCategoryView: View {
             for case let restaurantSnap as DataSnapshot in snapshot.children {
                 if let restaurantName = restaurantSnap.childSnapshot(forPath: "name").value as? String,
                    restaurantNames.contains(restaurantName) {
+                    let restaurantId = restaurantSnap.key
                     let menuSnapshot = restaurantSnap.childSnapshot(forPath: "menu").childSnapshot(forPath: category)
+
                     for case let foodSnap as DataSnapshot in menuSnapshot.children {
                         let id = foodSnap.key
                         let description = foodSnap.childSnapshot(forPath: "description").value as? String
                         let imageUrl = foodSnap.childSnapshot(forPath: "imageURL").value as? String
                         let price = foodSnap.childSnapshot(forPath: "price").value as? Double
-                        if let description = description, let imageUrl = imageUrl, let price = price {
-                            items.append(FoodItem(id: id, description: description, imageUrl: imageUrl, price: price))
+                        if let description, let imageUrl, let price {
+                            items.append(FoodItem(id: id, description: description, imageURL: imageUrl, restaurantId: restaurantId, price: price))
                         }
                     }
                 }
             }
-            if items.isEmpty {
-                showNoItemsAlert = true
-            } else {
-                foodItems = items
+            DispatchQueue.main.async {
+                if items.isEmpty {
+                    showNoItemsAlert = true
+                } else {
+                    foodItems = items
+                }
             }
         }
     }
 
     private func addToCart(food: FoodItem) {
-        guard let currentUser = Auth.auth().currentUser else { return }
-        let cartRef = Database.database().reference(withPath: "cart").child(currentUser.uid)
-        let newItemRef = cartRef.childByAutoId()
+        guard let currentUser = Auth.auth().currentUser else {
+            print("❌ No authenticated user.")
+            return
+        }
+        let cartRef = Database.database().reference(withPath: "cart").child(currentUser.uid).childByAutoId()
         let cartItem: [String: Any] = [
             "foodId": food.id,
             "foodDescription": food.description,
-            "foodImage": food.imageUrl,
+            "foodImage": food.imageURL,
+            "restaurantId": food.restaurantId,
             "foodPrice": food.price,
             "quantity": 1
         ]
-        newItemRef.setValue(cartItem) { error, _ in
-            if error == nil {
-                print("✅ Added to Cart")
+        cartRef.setValue(cartItem) { error, _ in
+            if let error = error {
+                print("❌ Failed to add to cart: \(error.localizedDescription)")
             } else {
-                print("❌ Error: \(error?.localizedDescription ?? "Unknown error")")
+                print("✅ Added \(food.id) to cart")
             }
         }
     }
@@ -242,8 +244,7 @@ struct FeaturedCategoryView: View {
     }
 }
 
-struct FeaturedCategoryView_Previews: PreviewProvider {
-    static var previews: some View {
-        FeaturedCategoryView(selectedCategory: "Pizza")
-    }
+
+#Preview {
+    FeaturedCategoryView(selectedCategory: "Pizza")
 }

@@ -138,29 +138,35 @@ struct ApprovalView: View {
         for node in nodes {
             group.enter()
             dbRef.child(node).observeSingleEvent(of: .value) { snapshot in
-                for child in snapshot.children {
-                    if let snap = child as? DataSnapshot,
-                       let userData = snap.value as? [String: Any],
+                for case let child as DataSnapshot in snapshot.children {
+                    if let userData = child.value as? [String: Any],
                        let status = userData["status"] as? String,
                        status.lowercased() == "pending" {
+                        
+                        // Construct user with fallback values for optional fields
                         let user = User(
-                            userId: snap.key,
+                            userId: child.key,
                             name: userData["name"] as? String ?? "",
                             email: userData["email"] as? String ?? "",
-                            role: userData["role"] as? String ?? "",
-                            status: status
+                            phone: userData["phone"] as? String ?? "",
+                            address: userData["address"] as? String ?? "",
+                            role: userData["role"] as? String ?? node, // fallback to node name
+                            status: status,
+                            imageURL: userData["imageURL"] as? String ?? ""
                         )
+
                         allPendingUsers.append(user)
                     }
                 }
                 group.leave()
-            } withCancel: { _ in
+            } withCancel: { error in
+                print("❌ Error fetching \(node): \(error.localizedDescription)")
                 group.leave()
             }
         }
 
         group.notify(queue: .main) {
-            pendingUsers = allPendingUsers
+            self.pendingUsers = allPendingUsers
         }
     }
 }

@@ -1,56 +1,62 @@
-//
-//  CartItem.swift
-//  togoo
-//
-//  Created by Ifechukwu Aroh on 2025-03-25.
-//
-
-
 import Foundation
 
 struct CartItem: Identifiable, Codable {
-    var id: String { cartItemId ?? foodId } // ✅ required by Identifiable
+    var id: String { cartItemId ?? foodId }
 
-    var cartItemId: String?      // Unique key from Firebase push() (optional)
-    var foodId: String           // UID for the food item
-    var foodDescription: String  // Description of the food item
-    var foodImage: String        // URL string for the food image
-    var foodPrice: Double        // Price of the food item
-    var quantity: Int            // Quantity of the food item in the cart
+    var cartItemId: String?       // Unique key from Firebase push()
+    var foodId: String            // UID of the food item
+    var foodDescription: String   // Description of the food item
+    var foodImage: String         // URL of the food image
+    var foodPrice: Double         // Price of the food item
+    var quantity: Int             // Quantity in the cart
+    var restaurantId: String      // Restaurant UID
 
-    // Default initializer
-    init(cartItemId: String? = nil, foodId: String, foodDescription: String, foodImage: String, foodPrice: Double, quantity: Int) {
+    // MARK: - Initializers
+
+    init(cartItemId: String? = nil, foodId: String, foodDescription: String, foodImage: String, restaurantId: String, foodPrice: Double, quantity: Int) {
         self.cartItemId = cartItemId
         self.foodId = foodId
         self.foodDescription = foodDescription
         self.foodImage = foodImage
+        self.restaurantId = restaurantId
         self.foodPrice = foodPrice
         self.quantity = quantity
     }
 
-    // Initialize from a dictionary (useful when fetching data from Firebase)
     init?(dict: [String: Any]) {
         guard let foodId = dict["foodId"] as? String,
               let foodDescription = dict["foodDescription"] as? String,
               let foodImage = dict["foodImage"] as? String,
-              let foodPrice = dict["foodPrice"] as? Double,
+              let restaurantId = dict["restaurantId"] as? String,
+              let foodPriceRaw = dict["foodPrice"],
               let quantity = dict["quantity"] as? Int else {
             return nil
         }
+
+        // Handle price conversion from either String or Double
+        if let priceDouble = foodPriceRaw as? Double {
+            self.foodPrice = priceDouble
+        } else if let priceString = foodPriceRaw as? String, let parsed = Double(priceString) {
+            self.foodPrice = parsed
+        } else {
+            self.foodPrice = 0.0
+        }
+
+        self.cartItemId = dict["cartItemId"] as? String
         self.foodId = foodId
         self.foodDescription = foodDescription
         self.foodImage = foodImage
-        self.foodPrice = foodPrice
+        self.restaurantId = restaurantId
         self.quantity = quantity
-        self.cartItemId = dict["cartItemId"] as? String
     }
 
-    // Convert the CartItem into a dictionary (useful for saving to Firebase)
+    // MARK: - Dictionary for Firebase
     func toDictionary() -> [String: Any] {
         var dict: [String: Any] = [
             "foodId": foodId,
             "foodDescription": foodDescription,
             "foodImage": foodImage,
+            "restaurantId": restaurantId,
             "foodPrice": foodPrice,
             "quantity": quantity
         ]

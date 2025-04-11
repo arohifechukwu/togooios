@@ -110,8 +110,30 @@ struct ApprovalCardView: View {
 // MARK: - Preview
 struct ApprovalCardView_Previews: PreviewProvider {
     static var previews: some View {
-        ApprovalCardView(pendingUsers: .constant([
-            User(userId: "2", name: "Mark Smith", email: "mark@example.com", role: "Driver", status: "Pending")
-        ]), user: User(userId: "2", name: "Mark Smith", email: "mark@example.com", role: "Driver", status: "Pending"), primaryColor: Color(hex: "F18D34"))
+        ApprovalCardView(
+            pendingUsers: .constant([
+                User(
+                    userId: "2",
+                    name: "Mark Smith",
+                    email: "mark@example.com",
+                    phone: "555-123-4567",
+                    address: "123 Maple Street",
+                    role: "Driver",
+                    status: "Pending",
+                    imageURL: "https://example.com/profile.jpg"
+                )
+            ]),
+            user: User(
+                userId: "2",
+                name: "Mark Smith",
+                email: "mark@example.com",
+                phone: "555-123-4567",
+                address: "123 Maple Street",
+                role: "Driver",
+                status: "Pending",
+                imageURL: "https://example.com/profile.jpg"
+            ),
+            primaryColor: Color(hex: "F18D34")
+        )
     }
 }
