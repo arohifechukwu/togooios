@@ -20,6 +20,7 @@ struct RestaurantView: View {
     @State private var destinationView: AnyView? = nil
     @State private var selectedFoodItem: FoodItem?
     @State private var selectedRestaurant: Restaurant?
+    @State private var selectedTab: String = "restaurants"
 
     @StateObject private var locationManager = AppLocationManager()
     private var dbRef: DatabaseReference { Database.database().reference() }
@@ -29,45 +30,88 @@ struct RestaurantView: View {
     let lightGray = Color(hex: "F5F5F5")
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                header
-                searchBar
-                if !searchResults.isEmpty {
-                    searchSuggestionList
+        NavigationStack {
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        header
+                        searchBar
+                        if !searchResults.isEmpty {
+                            searchSuggestionList
+                        }
+                        if showViewAllLink {
+                            viewAllResultsButton
+                        }
+                        featuredCategoriesGrid
+                        Text("Restaurants Near You")
+                            .font(.title3.bold())
+                            .padding(.horizontal)
+                        restaurantGrid
+                    }
+                    .padding(.bottom, 56)
                 }
-                if showViewAllLink {
-                    viewAllResultsButton
+                .background(lightGray)
+                .onAppear {
+                    fetchFeaturedCategories()
+                    fetchUserLocationAndLoadRestaurants()
                 }
-                featuredCategoriesGrid
-                Text("Restaurants Near You")
-                    .font(.title3.bold())
-                    .padding(.horizontal)
-                restaurantGrid
-            }
-            .padding(.bottom, 56)
-        }
-        .background(lightGray)
-        .navigationBarBackButtonHidden(true)
-        .onAppear {
-            fetchFeaturedCategories()
-            fetchUserLocationAndLoadRestaurants()
-        }
-        
-        .navigationDestination(isPresented: $navigateToDestination) {
-            if let food = selectedFoodItem, let restaurant = selectedRestaurant {
-                FoodDetailView(foodItem: food, restaurant: restaurant)
-            } else if let view = destinationView {
-                view
-            } else {
-                EmptyView()
-            }
-        }
-        
-        .toolbar {
-            ToolbarItem(placement: .bottomBar) {
+
                 bottomNavigationBar
             }
+            .navigationBarBackButtonHidden(true)
+            .navigationDestination(isPresented: $navigateToDestination) {
+                if let food = selectedFoodItem, let restaurant = selectedRestaurant {
+                    FoodDetailView(foodItem: food, restaurant: restaurant)
+                } else if let view = destinationView {
+                    view
+                } else {
+                    EmptyView()
+                }
+            }
+        }
+    }
+
+    private var bottomNavigationBar: some View {
+        HStack(spacing: 0) {
+            navItem(title: "Home", imageName: "ic_home", tab: "home") {
+                destinationView = AnyView(CustomerHomeView())
+                selectedTab = "home"
+                navigateToDestination = true
+            }
+            navItem(title: "Restaurants", imageName: "ic_restaurant", tab: "restaurants", isSelected: true) {
+                // already here
+            }
+            navItem(title: "Orders", imageName: "ic_order", tab: "orders") {
+                destinationView = AnyView(OrderView())
+                selectedTab = "orders"
+                navigateToDestination = true
+            }
+            navItem(title: "Account", imageName: "ic_account", tab: "account") {
+                destinationView = AnyView(AccountView())
+                selectedTab = "account"
+                navigateToDestination = true
+            }
+        }
+        .padding(.vertical, 10)
+        .background(Color.white)
+        .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: -1)
+    }
+
+    private func navItem(title: String, imageName: String, tab: String, isSelected: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(imageName)
+                    .resizable()
+                    .renderingMode(.template)
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(isSelected ? Color(hex: "F18D34") : Color(hex: "757575"))
+
+                Text(title)
+                    .font(.caption2)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundColor(isSelected ? Color(hex: "F18D34") : Color(hex: "757575"))
+            }
+            .frame(maxWidth: .infinity)
         }
     }
 
@@ -182,7 +226,7 @@ struct RestaurantView: View {
         }
         .padding(.horizontal)
     }
-    
+
     private func fetchRestaurant(for restaurantId: String, completion: @escaping (Restaurant?) -> Void) {
         dbRef.child("restaurant").child(restaurantId).getData { error, snapshot in
             if let data = snapshot?.value as? [String: Any],
@@ -193,34 +237,6 @@ struct RestaurantView: View {
                 completion(nil)
             }
         }
-    }
-
-    private var bottomNavigationBar: some View {
-        HStack {
-            CustomerBottomNavItem(imageName: "ic_home", title: "Home", isSelected: false) {
-                destinationView = AnyView(CustomerHomeView())
-                navigateToDestination = true
-            }
-            Spacer()
-            CustomerBottomNavItem(imageName: "ic_restaurant", title: "Restaurants", isSelected: true) {}
-            Spacer()
-            CustomerBottomNavItem(imageName: "ic_browse", title: "Browse", isSelected: false) {
-                destinationView = AnyView(BrowseView())
-                navigateToDestination = true
-            }
-            Spacer()
-            CustomerBottomNavItem(imageName: "ic_order", title: "Order", isSelected: false) {
-                destinationView = AnyView(OrderView())
-                navigateToDestination = true
-            }
-            Spacer()
-            CustomerBottomNavItem(imageName: "ic_account", title: "Account", isSelected: false) {
-                destinationView = AnyView(AccountView())
-                navigateToDestination = true
-            }
-        }
-        .padding(.vertical, 8)
-        .background(white)
     }
 
     private func fetchFeaturedCategories() {
@@ -237,29 +253,29 @@ struct RestaurantView: View {
     }
 
     private func fetchUserLocationAndLoadRestaurants() {
-            guard let currentUID = Auth.auth().currentUser?.uid else { return }
+        guard let currentUID = Auth.auth().currentUser?.uid else { return }
 
-            let roles = ["customer", "driver", "restaurant"]
-            let rootRef = Database.database().reference()
+        let roles = ["customer", "driver", "restaurant"]
+        let rootRef = Database.database().reference()
 
-            rootRef.observeSingleEvent(of: .value) { snapshot in
-                for role in roles {
-                    if snapshot.childSnapshot(forPath: role).hasChild(currentUID) {
-                        let userSnap = snapshot.childSnapshot(forPath: "\(role)/\(currentUID)/location")
-                        let latVal = userSnap.childSnapshot(forPath: "latitude").value
-                        let lonVal = userSnap.childSnapshot(forPath: "longitude").value
+        rootRef.observeSingleEvent(of: .value) { snapshot in
+            for role in roles {
+                if snapshot.childSnapshot(forPath: role).hasChild(currentUID) {
+                    let userSnap = snapshot.childSnapshot(forPath: "\(role)/\(currentUID)/location")
+                    let latVal = userSnap.childSnapshot(forPath: "latitude").value
+                    let lonVal = userSnap.childSnapshot(forPath: "longitude").value
 
-                        let lat = Double(String(describing: latVal ?? "0")) ?? 0.0
-                        let lon = Double(String(describing: lonVal ?? "0")) ?? 0.0
+                    let lat = Double(String(describing: latVal ?? "0")) ?? 0.0
+                    let lon = Double(String(describing: lonVal ?? "0")) ?? 0.0
 
-                        loadRestaurants(userLat: lat, userLon: lon)
-                        return
-                    }
+                    loadRestaurants(userLat: lat, userLon: lon)
+                    return
                 }
-                // Fallback if user location is not found
-                loadRestaurants(userLat: 0.0, userLon: 0.0)
             }
+            // Fallback if user location is not found
+            loadRestaurants(userLat: 0.0, userLon: 0.0)
         }
+    }
 
     private func loadRestaurants(userLat: Double, userLon: Double) {
         dbRef.child("restaurant").observeSingleEvent(of: .value, with: { snapshot in
@@ -281,7 +297,6 @@ struct RestaurantView: View {
                 let distance = AppLocationManager.calculateDistance(lat1: userLat, lon1: userLon, lat2: lat, lon2: lon)
                 let eta = Int((distance / 40.0) * 60.0)
 
-                
                 let address = child.childSnapshot(forPath: "address").value as? String ?? "Address unavailable"
 
                 var opHours: [String: OperatingHours] = [:]
@@ -312,7 +327,6 @@ struct RestaurantView: View {
             print("❌ Failed to load restaurants: \(error.localizedDescription)")
         })
     }
-    
 
     private func searchMenuItems(query: String) {
         let queryLower = query.lowercased()
@@ -349,4 +363,3 @@ struct RestaurantView_Previews: PreviewProvider {
         RestaurantView()
     }
 }
-

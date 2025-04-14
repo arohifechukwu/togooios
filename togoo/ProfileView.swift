@@ -12,9 +12,7 @@ import FirebaseDatabase
 import FirebaseStorage
 
 struct ProfileView: View {
-    // Navigation
-    @State private var navigateToDestination = false
-    @State private var destinationView: AnyView? = nil
+    @Environment(\.dismiss) var dismiss
 
     // User Info
     @State private var name = ""
@@ -35,13 +33,25 @@ struct ProfileView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Title Bar
-            Text("Profile")
-                .frame(maxWidth: .infinity)
-                .padding()
-                .font(.headline)
-                .foregroundColor(.white)
-                .background(primaryColor)
+            // Title Bar with custom back
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.white)
+                        .font(.headline)
+                    Text("Back")
+                        .foregroundColor(.white)
+                        .font(.subheadline)
+                }
+                Spacer()
+                Text("Profile")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                Spacer()
+                Spacer().frame(width: 60) // to balance the Back button
+            }
+            .padding()
+            .background(primaryColor)
 
             ScrollView {
                 VStack(spacing: 16) {
@@ -49,12 +59,10 @@ struct ProfileView: View {
                     formFieldsSection
                     saveButton
                 }
+                .padding(.bottom)
             }
 
             Spacer()
-
-            // Bottom Navigation Bar
-            bottomNavigationBar
         }
         .navigationBarBackButtonHidden(true)
         .background(backgroundColor.edgesIgnoringSafeArea(.all))
@@ -64,9 +72,6 @@ struct ProfileView: View {
         }
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Profile Update"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-        }
-        .navigationDestination(isPresented: $navigateToDestination) {
-            destinationView
         }
     }
 
@@ -125,38 +130,6 @@ struct ProfileView: View {
         .foregroundColor(.black)
         .cornerRadius(8)
         .padding(.horizontal)
-    }
-
-    private var bottomNavigationBar: some View {
-        HStack {
-            CustomerBottomNavItem(imageName: "ic_home", title: "Home", isSelected: false) {
-                destinationView = AnyView(CustomerHomeView())
-                navigateToDestination = true
-            }
-            Spacer()
-            CustomerBottomNavItem(imageName: "ic_restaurant", title: "Restaurants", isSelected: false) {
-                destinationView = AnyView(RestaurantView())
-                navigateToDestination = true
-            }
-            Spacer()
-            CustomerBottomNavItem(imageName: "ic_browse", title: "Browse", isSelected: false) {
-                destinationView = AnyView(BrowseView())
-                navigateToDestination = true
-            }
-            Spacer()
-            CustomerBottomNavItem(imageName: "ic_order", title: "Order", isSelected: false) {
-                destinationView = AnyView(OrderView())
-                navigateToDestination = true
-            }
-            Spacer()
-            CustomerBottomNavItem(imageName: "ic_account", title: "Account", isSelected: true) {
-                destinationView = AnyView(AccountView())
-                navigateToDestination = true
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(backgroundColor)
     }
 
     private func fetchUserInfo() {

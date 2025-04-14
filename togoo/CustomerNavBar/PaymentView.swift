@@ -20,7 +20,7 @@ struct PaymentView: View {
     var orderNote: String
     var paymentMethod: String = "Card"
 
-    private let baseURL = "https://ec24-185-205-247-240.ngrok-free.app"
+    private let baseURL = "https://879c-69-70-47-2.ngrok-free.app"
     private let primaryColor = Color(hex: "F18D34")
 
     var body: some View {

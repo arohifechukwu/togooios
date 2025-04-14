@@ -18,7 +18,7 @@ struct RestaurantHomeView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Header Bar
+                // Header
                 Text("Orders")
                     .font(.title2.bold())
                     .foregroundColor(.white)
@@ -46,15 +46,18 @@ struct RestaurantHomeView: View {
                                 .padding(.top, 32)
                         }
 
-                        ForEach(viewModel.placedOrders, id: \.orderId) { order in
+                        ForEach(viewModel.placedOrders, id: \ .orderId) { order in
                             RestaurantOrderCard(order: order,
-                                                onAccept: {
-                                                    viewModel.updateOrderStatus(orderId: order.orderId, newStatus: "accepted")
-                                                    viewModel.notifyDrivers(order: order)
-                                                },
-                                                onDecline: {
-                                                    viewModel.updateOrderStatus(orderId: order.orderId, newStatus: "declined")
-                                                })
+                                onAccept: {
+                                    viewModel.updateOrderStatus(orderId: order.orderId, newStatus: "accepted")
+                                    viewModel.notifyDrivers(order: order)
+                                    viewModel.placedOrders.removeAll { $0.orderId == order.orderId }
+                                },
+                                onDecline: {
+                                    viewModel.updateOrderStatus(orderId: order.orderId, newStatus: "declined")
+                                    viewModel.placedOrders.removeAll { $0.orderId == order.orderId }
+                                }
+                            )
                         }
                     }
                     .padding()
@@ -66,7 +69,6 @@ struct RestaurantHomeView: View {
                     navigate = true
                 }
 
-                // Navigation Trigger
                 NavigationLink(destination: navigateTo, isActive: $navigate) {
                     EmptyView()
                 }
@@ -74,5 +76,11 @@ struct RestaurantHomeView: View {
             .background(Color(.systemGroupedBackground))
             .navigationBarBackButtonHidden(true)
         }
+    }
+}
+
+struct RestaurantHomeView_Previews: PreviewProvider {
+    static var previews: some View {
+        RestaurantHomeView()
     }
 }

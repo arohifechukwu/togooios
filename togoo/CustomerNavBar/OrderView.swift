@@ -39,24 +39,12 @@ struct OrderView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Top Bar
-                HStack {
-                    Button {
-                        destinationView = AnyView(CustomerHomeView())
-                        navigateToDestination = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                        .foregroundColor(.accentColor)
-                    }
-                    Spacer()
-                    Text("My Orders")
-                        .font(.headline)
-                    Spacer()
-                    Spacer().frame(width: 60)
-                }
-                .padding()
+                Text("My Orders")
+                    .font(.title2.bold())
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .foregroundColor(.white)
+                    .background(Color(hex: "F18D34"))
 
                 // Order List
                 ScrollView {
@@ -66,20 +54,14 @@ struct OrderView: View {
                                 order: order,
                                 onKnowDriver: {
                                     if let driverId = order.driverId, let eta = order.estimatedDeliveryTime {
-                                        DispatchQueue.main.async {
-                                            driverSheet = DriverSheet(driverId: driverId, eta: eta)
-                                        }
+                                        driverSheet = DriverSheet(driverId: driverId, eta: eta)
                                     }
                                 },
                                 onRateOrder: {
-                                    DispatchQueue.main.async {
-                                        ratingSheet = RatingSheet(order: order)
-                                    }
+                                    ratingSheet = RatingSheet(order: order)
                                 },
                                 onLogComplaint: {
-                                    DispatchQueue.main.async {
-                                        disputeSheet = DisputeSheet(order: order)
-                                    }
+                                    disputeSheet = DisputeSheet(order: order)
                                 }
                             )
                         }
@@ -87,7 +69,7 @@ struct OrderView: View {
                     .padding()
                 }
 
-                // Bottom Nav
+                // Bottom Navigation
                 bottomNavigationBar
 
                 // Navigation Trigger
@@ -122,35 +104,48 @@ struct OrderView: View {
 
     private var bottomNavigationBar: some View {
         HStack(spacing: 0) {
-            CustomerBottomNavItem(imageName: "ic_home", title: "Home", isSelected: false) {
+            navItem(title: "Home", imageName: "ic_home", tab: "home") {
                 destinationView = AnyView(CustomerHomeView())
                 navigateToDestination = true
             }
-            .frame(maxWidth: .infinity)
-
-            CustomerBottomNavItem(imageName: "ic_restaurant", title: "Restaurants", isSelected: true) {}
-                .frame(maxWidth: .infinity)
-
-            CustomerBottomNavItem(imageName: "ic_browse", title: "Browse", isSelected: false) {
-                destinationView = AnyView(BrowseView())
+            navItem(title: "Restaurants", imageName: "ic_restaurant", tab: "restaurants") {
+                destinationView = AnyView(RestaurantView())
                 navigateToDestination = true
             }
-            .frame(maxWidth: .infinity)
-
-            CustomerBottomNavItem(imageName: "ic_order", title: "Order", isSelected: false) {
-                destinationView = AnyView(OrderView())
-                navigateToDestination = true
+            navItem(title: "Orders", imageName: "ic_order", tab: "orders", isSelected: true) {
+                // Already on Orders
             }
-            .frame(maxWidth: .infinity)
-
-            CustomerBottomNavItem(imageName: "ic_account", title: "Account", isSelected: false) {
+            navItem(title: "Account", imageName: "ic_account", tab: "account") {
                 destinationView = AnyView(AccountView())
                 navigateToDestination = true
             }
+        }
+        .padding(.vertical, 10)
+        .background(Color.white)
+        .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: -1)
+    }
+
+    private func navItem(title: String, imageName: String, tab: String, isSelected: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(imageName)
+                    .resizable()
+                    .renderingMode(.template)
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(isSelected ? Color(hex: "F18D34") : Color(hex: "757575"))
+
+                Text(title)
+                    .font(.caption2)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundColor(isSelected ? Color(hex: "F18D34") : Color(hex: "757575"))
+            }
             .frame(maxWidth: .infinity)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal)
-        .background(Color.white)
+    }
+}
+
+struct OrderView_Previews: PreviewProvider {
+    static var previews: some View {
+        OrderView()
     }
 }

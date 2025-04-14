@@ -89,15 +89,13 @@ class RestaurantOngoingOrdersViewModel: ObservableObject {
         orderListeners[orderId] = handle
     }
 
+
     func updateStatus(orderId: String, to newStatus: String) {
         let now = ISO8601DateFormatter().string(from: Date())
+        
+        // Update status and timestamp fields
         var updates: [String: Any] = [
-            "status": newStatus,
-            "updateLogs": [UUID().uuidString: [
-                "status": newStatus,
-                "note": "Status updated to \(newStatus) by restaurant.",
-                "timestamp": now
-            ]]
+            "status": newStatus
         ]
 
         let timeKey: String? = switch newStatus {
@@ -110,6 +108,7 @@ class RestaurantOngoingOrdersViewModel: ObservableObject {
             updates[k] = now
         }
 
+        // First: update status and timestamp
         db.child("orders").child(orderId).updateChildValues(updates) { _, _ in
             DispatchQueue.main.async {
                 if let index = self.ongoingOrders.firstIndex(where: { $0.orderId == orderId }) {
@@ -117,10 +116,24 @@ class RestaurantOngoingOrdersViewModel: ObservableObject {
                 }
             }
         }
-    }
 
+        // Then: write a new updateLog entry using a unique key
+        let logEntry: [String: Any] = [
+            "status": newStatus,
+            "note": "Status updated to \(newStatus) by restaurant.",
+            "timestamp": now
+        ]
+
+        db.child("orders").child(orderId).child("updateLogs").childByAutoId().setValue(logEntry)
+    }
+    
+    
+    
     var filteredOrders: [OngoingOrder] {
-        ongoingOrders.filter {
+        guard !searchQuery.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return ongoingOrders
+        }
+        return ongoingOrders.filter {
             switch filterBy {
             case "Order ID": $0.orderId.lowercased().contains(searchQuery.lowercased())
             case "Customer": $0.customerName.lowercased().contains(searchQuery.lowercased())

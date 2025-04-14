@@ -1,30 +1,30 @@
 //
-//  CustomerBottomNavItem.swift
+//  DriverBottomNavItem.swift
 //  togoo
 //
-//  Created by Ifechukwu Aroh on 2025-03-25.
+//  Created by Ifechukwu Aroh on 2025-04-13.
 //
 
 
 import SwiftUI
 
-struct CustomerBottomNavItem: View {
+struct DriverBottomNavItem: View {
     var selectedTab: String
     var onTabSelected: (AnyView) -> Void
 
     var body: some View {
         HStack(spacing: 0) {
-            navItem(title: "Home", imageName: "ic_home", isSelected: selectedTab == "home") {
-                onTabSelected(AnyView(CustomerHomeView()))
+            navItem(title: "Notifications", imageName: "ic_notification", isSelected: selectedTab == "notifications") {
+                onTabSelected(AnyView(DriverNotificationsView()))
             }
-            navItem(title: "Restaurants", imageName: "ic_restaurant", isSelected: selectedTab == "restaurants") {
-                onTabSelected(AnyView(RestaurantView()))
+            navItem(title: "Orders", imageName: "ic_buy", isSelected: selectedTab == "orders") {
+                onTabSelected(AnyView(DriverHomeView()))
             }
-            navItem(title: "Orders", imageName: "ic_order", isSelected: selectedTab == "orders") {
-                onTabSelected(AnyView(OrderView()))
+            navItem(title: "Reports", imageName: "ic_report", isSelected: selectedTab == "reports") {
+                onTabSelected(AnyView(DriverReportView()))
             }
-            navItem(title: "Account", imageName: "ic_account", isSelected: selectedTab == "account") {
-                onTabSelected(AnyView(AccountView()))
+            navItem(title: "Account", imageName: "ic_setting", isSelected: selectedTab == "account") {
+                onTabSelected(AnyView(DriverAccountView()))
             }
         }
         .padding(.vertical, 10)

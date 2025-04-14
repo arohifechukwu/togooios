@@ -44,11 +44,12 @@ class RestaurantManageViewModel: ObservableObject {
             for child in snapshot.children {
                 if let snap = child as? DataSnapshot,
                    let dict = snap.value as? [String: Any],
-                   let desc = dict["foodDescription"] as? String,
+                   let desc = dict["description"] as? String,
                    let price = dict["price"] as? Double,
-                   let imgURL = dict["imageURL"] as? String {
+                   let imgURL = dict["imageURL"] as? String,
+                   let id = dict["id"] as? String {
                     let item = FoodItemEditable(
-                        foodId: snap.key,
+                        foodId: id,
                         description: desc,
                         price: price,
                         imageURL: imgURL,
@@ -72,11 +73,12 @@ class RestaurantManageViewModel: ObservableObject {
                 for itemSnap in catSnap.children {
                     if let snap = itemSnap as? DataSnapshot,
                        let dict = snap.value as? [String: Any],
-                       let desc = dict["foodDescription"] as? String,
+                       let desc = dict["description"] as? String,
                        let price = dict["price"] as? Double,
-                       let imgURL = dict["imageURL"] as? String {
+                       let imgURL = dict["imageURL"] as? String,
+                       let id = dict["id"] as? String {
                         let item = FoodItemEditable(
-                            foodId: snap.key,
+                            foodId: id,
                             description: desc,
                             price: price,
                             imageURL: imgURL,
@@ -101,14 +103,20 @@ class RestaurantManageViewModel: ObservableObject {
                 $0.foodId.lowercased().contains(query)
                 || $0.section.lowercased().contains(query)
                 || ($0.category?.lowercased().contains(query) ?? false)
-            }
+            }.sorted(by: { a, b in
+                let aStarts = a.foodId.lowercased().hasPrefix(query)
+                let bStarts = b.foodId.lowercased().hasPrefix(query)
+                return aStarts && !bStarts
+            })
         }
     }
 
     func delete(item: FoodItemEditable) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
+
         let ref: DatabaseReference
-        if item.parentNode == "menu", let category = item.category {
+        if item.parentNode == "menu" {
+            guard let category = item.category else { return }
             ref = db.child("restaurant").child(uid).child("menu").child(category).child(item.foodId)
         } else {
             ref = db.child("restaurant").child(uid).child(item.parentNode).child(item.foodId)

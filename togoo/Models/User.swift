@@ -6,18 +6,6 @@
 //
 
 
-//import Foundation
-//
-//struct User: Identifiable {
-//    var id: String { userId }
-//    var userId: String
-//    var name: String
-//    var email: String
-//    var role: String
-//    var status: String
-//}
-
-
 
 import Foundation
 

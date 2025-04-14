@@ -264,7 +264,7 @@ struct LoginView: View {
             case "customer":
                 destinationView = AnyView(CustomerHomeView())
             case "driver":
-                destinationView = AnyView(DriverHomeView())
+                destinationView = AnyView(DriverNotificationsView())
             case "restaurant":
                 destinationView = AnyView(RestaurantHomeView())
             case "admin":

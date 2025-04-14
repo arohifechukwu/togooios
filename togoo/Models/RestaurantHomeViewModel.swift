@@ -38,11 +38,17 @@ class RestaurantHomeViewModel: ObservableObject {
     func fetchOrderIds() {
         guard let restaurantId = Auth.auth().currentUser?.uid else { return }
         let ref = db.child("ordersByRestaurant").child(restaurantId)
+
         ref.observe(.value) { snapshot in
             self.placedOrders.removeAll()
-            self.orderListeners.values.forEach { handle in
-                self.db.removeObserver(withHandle: handle)
+
+            // ✅ Remove all previous listeners with orderId reference
+            for (orderId, handle) in self.orderListeners {
+                self.db.child("orders").child(orderId).removeObserver(withHandle: handle)
             }
+
+            self.orderListeners.removeAll() // clean the dictionary
+
             snapshot.children.forEach { child in
                 if let snap = child as? DataSnapshot {
                     self.listenToOrder(orderId: snap.key)
@@ -53,9 +59,15 @@ class RestaurantHomeViewModel: ObservableObject {
 
     func listenToOrder(orderId: String) {
         let handle = db.child("orders").child(orderId).observe(.value) { snap in
-            guard let status = snap.childSnapshot(forPath: "status").value as? String,
-                  status == "placed",
-                  let customer = snap.childSnapshot(forPath: "customer").value as? [String: Any],
+            // ✅ Check if order no longer exists or status is not "placed"
+            if !snap.exists() || snap.childSnapshot(forPath: "status").value as? String != "placed" {
+                DispatchQueue.main.async {
+                    self.placedOrders.removeAll { $0.orderId == orderId }
+                }
+                return
+            }
+
+            guard let customer = snap.childSnapshot(forPath: "customer").value as? [String: Any],
                   let name = customer["name"] as? String,
                   let phone = customer["phone"] as? String,
                   let address = customer["address"] as? String else { return }
@@ -83,7 +95,7 @@ class RestaurantHomeViewModel: ObservableObject {
                 total: total,
                 paymentMethod: method,
                 notes: notes,
-                status: status
+                status: "placed"
             )
 
             DispatchQueue.main.async {
@@ -95,15 +107,40 @@ class RestaurantHomeViewModel: ObservableObject {
         orderListeners[orderId] = handle
     }
 
+//    func updateOrderStatus(orderId: String, newStatus: String) {
+//        let now = ISO8601DateFormatter().string(from: Date())
+//        var updates: [String: Any] = [
+//            "status": newStatus,
+//            "updateLogs": [UUID().uuidString: [
+//                "status": newStatus,
+//                "note": "Status updated to \(newStatus) by restaurant.",
+//                "timestamp": now
+//            ]]
+//        ]
+//
+//        let timestampKey: String? = {
+//            switch newStatus {
+//            case "accepted": return "timestamps/restaurantAccepted"
+//            case "declined": return "timestamps/restaurantDeclined"
+//            case "preparing": return "timestamps/preparing"
+//            case "ready": return "timestamps/readyForPickup"
+//            default: return nil
+//            }
+//        }()
+//
+//        if let key = timestampKey {
+//            updates[key] = now
+//        }
+//
+//        db.child("orders").child(orderId).updateChildValues(updates)
+//    }
+    
     func updateOrderStatus(orderId: String, newStatus: String) {
         let now = ISO8601DateFormatter().string(from: Date())
+
+        // Step 1: Update status and timestamp
         var updates: [String: Any] = [
-            "status": newStatus,
-            "updateLogs": [UUID().uuidString: [
-                "status": newStatus,
-                "note": "Status updated to \(newStatus) by restaurant.",
-                "timestamp": now
-            ]]
+            "status": newStatus
         ]
 
         let timestampKey: String? = {
@@ -121,6 +158,15 @@ class RestaurantHomeViewModel: ObservableObject {
         }
 
         db.child("orders").child(orderId).updateChildValues(updates)
+
+        // Step 2: Add a new log entry under updateLogs using childByAutoId
+        let logEntry: [String: Any] = [
+            "status": newStatus,
+            "note": "Status updated to \(newStatus) by restaurant.",
+            "timestamp": now
+        ]
+
+        db.child("orders").child(orderId).child("updateLogs").childByAutoId().setValue(logEntry)
     }
 
     func notifyDrivers(order: PlacedOrder) {
@@ -141,4 +187,12 @@ class RestaurantHomeViewModel: ObservableObject {
             }
         }
     }
+    
+    
+    deinit {
+        for (orderId, handle) in orderListeners {
+            db.child("orders").child(orderId).removeObserver(withHandle: handle)
+        }
+    }
 }
+

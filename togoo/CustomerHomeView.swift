@@ -17,6 +17,7 @@ struct CustomerHomeView: View {
 
     @State private var navigateToDestination: Bool = false
     @State private var destinationView: AnyView? = nil
+    @State private var selectedTab: String = "home"
 
     let primaryColor = Color(hex: "F18D34")
     let lightGray = Color(hex: "F5F5F5")
@@ -26,40 +27,84 @@ struct CustomerHomeView: View {
     @StateObject private var locationManager = LocationManager()
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 14) {
-                headerView
-                searchBar
-                searchResultsView
-                featuredCategoryScrollView
-                specialOffersView
-                topPicksView
-            }
-            .padding(.bottom, 16)
-        }
-        .background(lightGray.edgesIgnoringSafeArea(.all))
-        .navigationBarBackButtonHidden(true)
-        .onAppear {
-            locationText = locationManager.locationName
-            fetchFeaturedCategories()
-            fetchSpecialOffers()
-            fetchTopPicks()
-            locationManager.startUpdating()
-            listenForNotificationUpdates()
-        }
-        .onChange(of: locationManager.location) { newLocation in
-            handleLocationChange(newLocation)
-        }
-        .onReceive(locationManager.$locationName) { updatedName in
-            locationText = updatedName
-        }
-        .navigationDestination(isPresented: $navigateToDestination) {
-            destinationView
-        }
-        .toolbar {
-            ToolbarItem(placement: .bottomBar) {
+        NavigationStack {
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 14) {
+                        headerView
+                        searchBar
+                        searchResultsView
+                        featuredCategoryScrollView
+                        specialOffersView
+                        topPicksView
+                    }
+                    .padding(.bottom, 16)
+                }
+                .background(lightGray.edgesIgnoringSafeArea(.all))
+                .onAppear {
+                    locationText = locationManager.locationName
+                    fetchFeaturedCategories()
+                    fetchSpecialOffers()
+                    fetchTopPicks()
+                    locationManager.startUpdating()
+                    listenForNotificationUpdates()
+                }
+                .onChange(of: locationManager.location) { newLocation in
+                    handleLocationChange(newLocation)
+                }
+                .onReceive(locationManager.$locationName) { updatedName in
+                    locationText = updatedName
+                }
+
                 bottomNavigationBar
             }
+            .navigationBarBackButtonHidden(true)
+            .navigationDestination(isPresented: $navigateToDestination) {
+                destinationView
+            }
+        }
+    }
+
+    private var bottomNavigationBar: some View {
+        HStack(spacing: 0) {
+            navItem(title: "Home", imageName: "ic_home", tab: "home", isSelected: true) {
+                // already here
+            }
+            navItem(title: "Restaurants", imageName: "ic_restaurant", tab: "restaurants") {
+                destinationView = AnyView(RestaurantView())
+                selectedTab = "restaurants"
+                navigateToDestination = true
+            }
+            navItem(title: "Orders", imageName: "ic_order", tab: "orders") {
+                destinationView = AnyView(OrderView())
+                selectedTab = "orders"
+                navigateToDestination = true
+            }
+            navItem(title: "Account", imageName: "ic_account", tab: "account") {
+                destinationView = AnyView(AccountView())
+                selectedTab = "account"
+                navigateToDestination = true
+            }
+        }
+        .padding(.vertical, 10)
+        .background(Color.white)
+        .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: -1)
+    }
+
+    private func navItem(title: String, imageName: String, tab: String, isSelected: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(imageName)
+                    .resizable()
+                    .renderingMode(.template)
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(isSelected ? Color(hex: "F18D34") : Color(hex: "757575"))
+                Text(title)
+                    .font(.caption2)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundColor(isSelected ? Color(hex: "F18D34") : Color(hex: "757575"))
+            }
+            .frame(maxWidth: .infinity)
         }
     }
 
@@ -303,34 +348,7 @@ struct CustomerHomeView: View {
         }
     }
 
-    private var bottomNavigationBar: some View {
-        HStack {
-            CustomerBottomNavItem(imageName: "ic_home", title: "Home", isSelected: true) {}
-            Spacer()
-            CustomerBottomNavItem(imageName: "ic_restaurant", title: "Restaurants", isSelected: false) {
-                destinationView = AnyView(RestaurantView())
-                navigateToDestination = true
-            }
-            Spacer()
-            CustomerBottomNavItem(imageName: "ic_browse", title: "Browse", isSelected: false) {
-                destinationView = AnyView(BrowseView())
-                navigateToDestination = true
-            }
-            Spacer()
-            CustomerBottomNavItem(imageName: "ic_order", title: "Order", isSelected: false) {
-                destinationView = AnyView(OrderView())
-                navigateToDestination = true
-            }
-            Spacer()
-            CustomerBottomNavItem(imageName: "ic_account", title: "Account", isSelected: false) {
-                destinationView = AnyView(AccountView())
-                navigateToDestination = true
-            }
-        }
-        .padding(.vertical, 8)
-        .background(white)
-    }
-    
+
 
     private func handleLocationChange(_ newLocation: CLLocation?) {
         if let loc = newLocation {

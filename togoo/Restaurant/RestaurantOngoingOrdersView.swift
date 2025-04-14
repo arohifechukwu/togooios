@@ -41,6 +41,7 @@ struct RestaurantOngoingOrdersView: View {
                 }
                 .pickerStyle(MenuPickerStyle())
                 .padding(.leading)
+                .tint(.primaryVariant)
 
                 TextField("Search...", text: $viewModel.searchQuery)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -59,7 +60,7 @@ struct RestaurantOngoingOrdersView: View {
 
                             if let driver = order.driverName {
                                 Text("Driver: \(driver)")
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(Color.darkGray)
                             } else {
                                 Text("Driver: \(viewModel.availableDriverCount) drivers available")
                                     .foregroundColor(.darkGray)
@@ -71,15 +72,18 @@ struct RestaurantOngoingOrdersView: View {
                                         viewModel.updateStatus(orderId: order.orderId, to: "preparing")
                                     }
                                     .buttonStyle(.borderedProminent)
+                                    .tint(.primaryVariant)
 
                                     Button("Ready") {
                                         viewModel.updateStatus(orderId: order.orderId, to: "ready")
                                     }
                                     .buttonStyle(.borderedProminent)
+                                    .tint(.primaryVariant)
                                 } else if order.status == "preparing" {
                                     Button("Preparing ✅") {}
                                         .buttonStyle(.bordered)
                                         .disabled(true)
+                                
 
                                     Button("Ready") {
                                         viewModel.updateStatus(orderId: order.orderId, to: "ready")
@@ -104,5 +108,12 @@ struct RestaurantOngoingOrdersView: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationBarBackButtonHidden(true)
+    }
+}
+
+
+struct RestaurantOngoingOrdersView_Previews: PreviewProvider {
+    static var previews: some View {
+        RestaurantOngoingOrdersView()
     }
 }

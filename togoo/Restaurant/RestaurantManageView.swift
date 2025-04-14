@@ -5,6 +5,7 @@
 //  Created by Ifechukwu Aroh on 2025-04-11.
 //
 
+
 import SwiftUI
 import FirebaseDatabase
 import FirebaseStorage
@@ -14,6 +15,8 @@ struct RestaurantManageView: View {
     @StateObject private var viewModel = RestaurantManageViewModel()
     @State private var navigateToEdit: Bool = false
     @State private var selectedEditItem: FoodItemEditable?
+    @State private var navigate = false
+    @State private var navigateTo: AnyView? = nil
 
     var body: some View {
         NavigationStack {
@@ -23,7 +26,7 @@ struct RestaurantManageView: View {
                     .foregroundColor(.white)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(Color.accentColor)
+                    .background(Color.primaryVariant)
 
                 TextField("Search food by name, category, section...", text: $viewModel.searchQuery)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -34,48 +37,70 @@ struct RestaurantManageView: View {
                     .foregroundColor(.darkGray)
                     .padding(.top, 4)
 
+                let groupedItems = Dictionary(grouping: viewModel.filteredItems) {
+                    $0.parentNode == "menu" ? "Menu - \($0.category ?? "")" : $0.parentNode
+                }
+
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 12) {
-                        ForEach(viewModel.filteredItems) { item in
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack(alignment: .top) {
-                                    AsyncImage(url: URL(string: item.imageURL)) { image in
-                                        image.resizable().scaledToFill()
-                                    } placeholder: {
-                                        Color.gray.opacity(0.2)
-                                    }
-                                    .frame(width: 80, height: 80)
-                                    .cornerRadius(8)
+                    LazyVStack(alignment: .leading, spacing: 16) {
+                        ForEach(Array(groupedItems.keys).sorted(), id: \.self) { section in
+                            if let items = groupedItems[section] {
+                                Text(section)
+                                    .font(.headline)
+                                    .padding(.horizontal)
 
-                                    VStack(alignment: .leading) {
-                                        Text(item.foodId).bold()
-                                        Text(item.description).font(.subheadline).foregroundColor(.gray)
-                                        Text("Price: $\(item.price, specifier: "%.2f")").font(.subheadline)
-                                        if let category = item.category {
-                                            Text("Category: \(category)").font(.footnote).foregroundColor(.secondary)
+                                ForEach(items) { item in
+                                    VStack(spacing: 0) {
+                                        AsyncImage(url: URL(string: item.imageURL)) { image in
+                                            image
+                                                .resizable()
+                                                .scaledToFill()
+                                        } placeholder: {
+                                            Image("ic_manage_food")
+                                                .resizable()
+                                                .scaledToFit()
+                                                .opacity(0.3)
                                         }
-                                        Text("Section: \(item.section)").font(.footnote).foregroundColor(.secondary)
-                                    }
-                                }
+                                        .frame(height: 160)
+                                        .frame(maxWidth: .infinity)
+                                        .clipped()
+                                        .cornerRadius(12, corners: [.topLeft, .topRight])
 
-                                HStack {
-                                    Button("Edit") {
-                                        selectedEditItem = item
-                                        navigateToEdit = true
-                                    }
-                                    .buttonStyle(.bordered)
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            Text(item.foodId)
+                                                .font(.headline)
 
-                                    Button("Delete") {
-                                        viewModel.delete(item: item)
+                                            Text(item.description)
+                                                .font(.subheadline)
+                                                .foregroundColor(.gray)
+
+                                            Text("Price: $\(item.price, specifier: "%.2f")")
+                                                .font(.subheadline)
+
+                                            HStack {
+                                                Spacer()
+                                                Button("Edit") {
+                                                    selectedEditItem = item
+                                                    navigateToEdit = true
+                                                }
+                                                .buttonStyle(.borderedProminent)
+                                                .tint(.primaryVariant)
+
+                                                Button("Delete") {
+                                                    viewModel.delete(item: item)
+                                                }
+                                                .buttonStyle(.borderedProminent)
+                                                .tint(.primaryVariant)
+                                            }
+                                        }
+                                        .padding()
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(.red)
+                                    .background(Color.white)
+                                    .cornerRadius(12)
+                                    .shadow(color: .gray.opacity(0.2), radius: 4, x: 0, y: 2)
+                                    .padding(.horizontal)
                                 }
                             }
-                            .padding()
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: .gray.opacity(0.1), radius: 4, x: 0, y: 2)
                         }
 
                         if viewModel.filteredItems.isEmpty {
@@ -85,16 +110,23 @@ struct RestaurantManageView: View {
                                 .frame(maxWidth: .infinity)
                         }
                     }
-                    .padding()
+                    .padding(.top)
                 }
 
-                RestaurantBottomNavigationView(selectedTab: "manage") { _ in }
+                RestaurantBottomNavigationView(selectedTab: "manage") { view in
+                    navigateTo = view
+                    navigate = true
+                }
 
                 NavigationLink(destination: destinationView(), isActive: $navigateToEdit) {
                     EmptyView()
                 }
+                NavigationLink(destination: navigateTo, isActive: $navigate) {
+                    EmptyView()
+                }
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
 
     @ViewBuilder
@@ -109,5 +141,32 @@ struct RestaurantManageView: View {
         } else {
             EmptyView()
         }
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: radius, height: radius)
+        )
+        return Path(path.cgPath)
+    }
+}
+
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
+
+struct RestaurantManageView_Previews: PreviewProvider {
+    static var previews: some View {
+        RestaurantManageView()
     }
 }

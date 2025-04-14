@@ -15,7 +15,7 @@ struct RestaurantBottomNavigationView: View {
     var body: some View {
         HStack(spacing: 0) {
             navItem(title: "Orders", imageName: "ic_order", isSelected: selectedTab == "orders") {
-                // Stay on current tab
+                onTabSelected(AnyView(RestaurantHomeView()))
             }
             navItem(title: "New", imageName: "ic_create", isSelected: selectedTab == "new") {
                 onTabSelected(AnyView(RestaurantNewView()))

@@ -14,13 +14,29 @@ struct SuccessView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 24) {
+                // ✅ Custom Back Button
+                HStack {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .background(Color.primaryVariant)
+                            .clipShape(Circle())
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.top)
+
                 Spacer()
 
                 // ✅ Success Icon
                 Image("ic_checkbox")
                     .resizable()
                     .frame(width: 100, height: 100)
-                    .padding(.top, 60)
+                    .padding(.top, 20)
 
                 // ✅ Title
                 Text("Payment Confirmed")

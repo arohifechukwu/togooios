@@ -5,6 +5,7 @@
 //  Created by Ifechukwu Aroh on 2025-04-11.
 //
 
+
 import SwiftUI
 import FirebaseStorage
 import FirebaseDatabase
@@ -18,7 +19,7 @@ struct EditFoodItemView: View {
     let category: String?
     let foodId: String
 
-    @State private var name: String = ""
+    @State private var id: String = ""
     @State private var description: String = ""
     @State private var price: String = ""
     @State private var image: UIImage? = nil
@@ -42,45 +43,79 @@ struct EditFoodItemView: View {
             .padding()
             .background(Color.primaryVariant)
 
+            // Inside ScrollView -> VStack:
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    // Image
                     if let image = image {
                         Image(uiImage: image)
                             .resizable()
-                            .scaledToFit()
+                            .scaledToFill()
                             .frame(height: 200)
+                            .frame(maxWidth: .infinity)
+                            .clipped()
                             .cornerRadius(12)
                     } else {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
+                        Image("burger")
+                            .resizable()
+                            .scaledToFill()
                             .frame(height: 200)
-                            .overlay(Text("No image selected"))
+                            .frame(maxWidth: .infinity)
+                            .clipped()
+                            .cornerRadius(12)
+                            .opacity(0.3)
                     }
 
-                    Button("Pick Image") {
-                        showImagePicker = true
+                    // Pick Image (centered)
+                    HStack {
+                        Spacer()
+                        Button("Pick Image") {
+                            showImagePicker = true
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.primaryVariant)
+                        Spacer()
                     }
 
+                    // ID (left-aligned)
+                    Text(id)
+                        .font(.headline)
+                        .padding(.horizontal)
+
+                    // Description
                     TextField("Description", text: $description)
                         .textFieldStyle(.roundedBorder)
+                        .padding(.horizontal)
 
+                    // Price
                     TextField("Price", text: $price)
                         .keyboardType(.decimalPad)
                         .textFieldStyle(.roundedBorder)
+                        .padding(.horizontal)
 
-                    Button("Save Changes") {
-                        saveChanges()
-                    }
-                    .buttonStyle(.borderedProminent)
-
+                    // Message
                     if !message.isEmpty {
                         Text(message)
                             .foregroundColor(.red)
                             .padding(.top, 4)
+                            .padding(.horizontal)
                     }
                 }
-                .padding()
+                .padding(.top)
             }
+
+            // Fixed Save Button
+            HStack {
+                Spacer()
+                Button("Save Changes") {
+                    saveChanges()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.primaryVariant)
+                Spacer()
+            }
+            .padding()
+            .background(Color(.systemGroupedBackground))
         }
         .onAppear(perform: loadFoodItem)
         .sheet(isPresented: $showImagePicker) {
@@ -93,15 +128,24 @@ struct EditFoodItemView: View {
     func loadFoodItem() {
         let ref: DatabaseReference
         if parentNode == "menu", let category = category {
-            ref = Database.database().reference().child("restaurant").child(restaurantId).child("menu").child(category).child(foodId)
+            ref = Database.database().reference()
+                .child("restaurant")
+                .child(restaurantId)
+                .child("menu")
+                .child(category)
+                .child(foodId)
         } else {
-            ref = Database.database().reference().child("restaurant").child(restaurantId).child(parentNode).child(foodId)
+            ref = Database.database().reference()
+                .child("restaurant")
+                .child(restaurantId)
+                .child(parentNode)
+                .child(foodId)
         }
 
         ref.observeSingleEvent(of: .value) { snapshot in
             if let data = snapshot.value as? [String: Any] {
-                name = data["foodId"] as? String ?? ""
-                description = data["foodDescription"] as? String ?? ""
+                id = data["id"] as? String ?? foodId
+                description = data["description"] as? String ?? ""
                 price = String(data["price"] as? Double ?? 0.0)
                 imageURL = data["imageURL"] as? String ?? ""
 
@@ -120,39 +164,66 @@ struct EditFoodItemView: View {
 
     func saveChanges() {
         guard !description.isEmpty, !price.isEmpty, let priceVal = Double(price) else {
-            message = "Please complete all fields."
+            showTemporaryMessage("Please complete all fields.")
             return
         }
 
         let ref: DatabaseReference
         if parentNode == "menu", let category = category {
-            ref = Database.database().reference().child("restaurant").child(restaurantId).child("menu").child(category).child(foodId)
+            ref = Database.database().reference()
+                .child("restaurant")
+                .child(restaurantId)
+                .child("menu")
+                .child(category)
+                .child(foodId)
         } else {
-            ref = Database.database().reference().child("restaurant").child(restaurantId).child(parentNode).child(foodId)
+            ref = Database.database().reference()
+                .child("restaurant")
+                .child(restaurantId)
+                .child(parentNode)
+                .child(foodId)
         }
 
         var updates: [String: Any] = [
-            "foodDescription": description,
+            "description": description,
             "price": priceVal
         ]
 
         if let image = image, let data = image.jpegData(compressionQuality: 0.8) {
-            let storageRef = Storage.storage().reference().child("restaurant_menu_images/\(restaurantId)/\(UUID().uuidString).jpg")
+            let storageRef = Storage.storage().reference()
+                .child("restaurant_menu_images/\(restaurantId)/\(UUID().uuidString).jpg")
+
             storageRef.putData(data, metadata: nil) { _, error in
                 if let error = error {
-                    message = "Image upload failed: \(error.localizedDescription)"
+                    showTemporaryMessage("Image upload failed: \(error.localizedDescription)")
                     return
                 }
                 storageRef.downloadURL { url, _ in
                     guard let url = url else { return }
                     updates["imageURL"] = url.absoluteString
                     ref.updateChildValues(updates)
-                    message = "Food item updated"
+                    showTemporaryMessage("Food item updated")
                 }
             }
         } else {
             ref.updateChildValues(updates)
-            message = "Food item updated"
+            showTemporaryMessage("Food item updated")
         }
     }
+
+    func showTemporaryMessage(_ text: String) {
+        message = text
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            message = ""
+        }
+    }
+}
+
+#Preview {
+    EditFoodItemView(
+        restaurantId: "mock_restaurant",
+        parentNode: "Special Offers",
+        category: nil,
+        foodId: "Coke123"
+    )
 }
