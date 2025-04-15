@@ -17,6 +17,8 @@
 		F4085AA42DA8E89B00202DC3 /* StripePayments in Frameworks */ = {isa = PBXBuildFile; productRef = F4085AA32DA8E89B00202DC3 /* StripePayments */; };
 		F4085AA62DA8E89B00202DC3 /* StripePaymentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = F4085AA52DA8E89B00202DC3 /* StripePaymentsUI */; };
 		F437AF762D869F890073197C /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = F437AF752D869F890073197C /* FirebaseFunctions */; };
+		F4666E5E2DAE04CC005847C1 /* SDWebImage in Frameworks */ = {isa = PBXBuildFile; productRef = F4666E5D2DAE04CC005847C1 /* SDWebImage */; };
+		F4666E602DAE04CC005847C1 /* SDWebImageMapKit in Frameworks */ = {isa = PBXBuildFile; productRef = F4666E5F2DAE04CC005847C1 /* SDWebImageMapKit */; };
 		F46C9F652D754A01003EECDA /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = F46C9F642D754A01003EECDA /* FirebaseAnalytics */; };
 		F46C9F672D754A01003EECDA /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F46C9F662D754A01003EECDA /* FirebaseAuth */; };
 		F46C9F692D754A01003EECDA /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = F46C9F682D754A01003EECDA /* FirebaseCore */; };
@@ -110,12 +112,14 @@
 				F46C9F692D754A01003EECDA /* FirebaseCore in Frameworks */,
 				F4085A982DA8E89B00202DC3 /* StripeApplePay in Frameworks */,
 				F46C9F6B2D754A01003EECDA /* FirebaseDatabase in Frameworks */,
+				F4666E602DAE04CC005847C1 /* SDWebImageMapKit in Frameworks */,
 				F46C9F6D2D754A01003EECDA /* FirebaseFirestore in Frameworks */,
 				F4085AA02DA8E89B00202DC3 /* StripeIdentity in Frameworks */,
 				F4085A962DA8E89B00202DC3 /* Stripe in Frameworks */,
 				F46C9F672D754A01003EECDA /* FirebaseAuth in Frameworks */,
 				F4085A9A2DA8E89B00202DC3 /* StripeCardScan in Frameworks */,
 				F46C9F6F2D754A01003EECDA /* FirebaseStorage in Frameworks */,
+				F4666E5E2DAE04CC005847C1 /* SDWebImage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -200,6 +204,8 @@
 				F4085AA12DA8E89B00202DC3 /* StripePaymentSheet */,
 				F4085AA32DA8E89B00202DC3 /* StripePayments */,
 				F4085AA52DA8E89B00202DC3 /* StripePaymentsUI */,
+				F4666E5D2DAE04CC005847C1 /* SDWebImage */,
+				F4666E5F2DAE04CC005847C1 /* SDWebImageMapKit */,
 			);
 			productName = togoo;
 			productReference = F43426C12D7541F100E01062 /* togoo.app */;
@@ -286,6 +292,7 @@
 			packageReferences = (
 				F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				F4085A942DA8E89B00202DC3 /* XCRemoteSwiftPackageReference "stripe-ios" */,
+				F4666E5C2DAE04CC005847C1 /* XCRemoteSwiftPackageReference "SDWebImage" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F43426C22D7541F100E01062 /* Products */;
@@ -691,6 +698,14 @@
 				minimumVersion = 24.11.0;
 			};
 		};
+		F4666E5C2DAE04CC005847C1 /* XCRemoteSwiftPackageReference "SDWebImage" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SDWebImage/SDWebImage.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.21.0;
+			};
+		};
 		F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -751,6 +766,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F46C9F632D754A01003EECDA /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFunctions;
+		};
+		F4666E5D2DAE04CC005847C1 /* SDWebImage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F4666E5C2DAE04CC005847C1 /* XCRemoteSwiftPackageReference "SDWebImage" */;
+			productName = SDWebImage;
+		};
+		F4666E5F2DAE04CC005847C1 /* SDWebImageMapKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F4666E5C2DAE04CC005847C1 /* XCRemoteSwiftPackageReference "SDWebImage" */;
+			productName = SDWebImageMapKit;
 		};
 		F46C9F642D754A01003EECDA /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;

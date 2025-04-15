@@ -48,6 +48,7 @@ struct RatingDialogView: View {
                     presentationMode.wrappedValue.dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(Color.primaryVariant)
             }
             .padding()
         }

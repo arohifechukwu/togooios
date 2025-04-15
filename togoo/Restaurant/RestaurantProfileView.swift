@@ -164,19 +164,19 @@ struct RestaurantProfileView: View {
             showTemporaryMessage("Please fill in all required fields.")
             return
         }
-
+        
         let ref = Database.database().reference().child("restaurant").child(restaurantId)
         ref.child("name").setValue(name)
         ref.child("address").setValue(address)
         ref.child("phone").setValue(phone)
-
+        
         for (day, (open, close)) in hours {
             ref.child("operatingHours").child(day).child("open").setValue(open)
             ref.child("operatingHours").child(day).child("close").setValue(close)
         }
-
-        updateCoordinatesFromAddress(address, for: ref)
-
+        
+        updateCoordinatesFromAddress(address)
+        
         if let image = image, let data = image.jpegData(compressionQuality: 0.8) {
             let storageRef = Storage.storage().reference().child("restaurant_profile_images").child("\(restaurantId).jpg")
             storageRef.putData(data, metadata: nil) { _, err in
@@ -189,17 +189,20 @@ struct RestaurantProfileView: View {
                 }
             }
         }
-
+        
         showTemporaryMessage("Profile updated")
+        
     }
-
-    private func updateCoordinatesFromAddress(_ address: String, for ref: DatabaseReference) {
+    private func updateCoordinatesFromAddress(_ address: String) {
         let geocoder = CLGeocoder()
         geocoder.geocodeAddressString(address) { placemarks, _ in
             guard let placemark = placemarks?.first,
                   let location = placemark.location else { return }
-            ref.child("location").child("latitude").setValue(location.coordinate.latitude)
-            ref.child("location").child("longitude").setValue(location.coordinate.longitude)
+
+            let restaurantUID = Auth.auth().currentUser?.uid ?? ""
+            let locationRef = Database.database().reference().child("restaurant").child(restaurantUID).child("location")
+            locationRef.child("latitude").setValue(location.coordinate.latitude)
+            locationRef.child("longitude").setValue(location.coordinate.longitude)
         }
     }
 

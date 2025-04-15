@@ -5,7 +5,6 @@
 //  Created by Ifechukwu Aroh on 2025-04-13.
 //
 
-
 import SwiftUI
 import FirebaseDatabase
 import FirebaseAuth
@@ -19,8 +18,10 @@ struct DriverDeliveryView: View {
     @State private var driverAddress = ""
     @State private var restaurantAddress = ""
     @State private var customerAddress = ""
-    @State private var mapRegion = MKCoordinateRegion()
+    @State private var mapRegion = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 43.6532, longitude: -79.3832),
+                                                      span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2))
     @State private var markers: [Marker] = []
+    @State private var routeCoordinates: [CLLocationCoordinate2D] = []
     @State private var showMarkArrived = false
     @State private var showMessage = ""
     @State private var navigateToHome = false
@@ -35,9 +36,8 @@ struct DriverDeliveryView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Header
                 HStack {
-                    Button(action: { dismiss() }) {
+                    Button { dismiss() } label: {
                         Image(systemName: "chevron.left")
                             .foregroundColor(.white)
                     }
@@ -49,18 +49,11 @@ struct DriverDeliveryView: View {
                 .padding()
                 .background(Color.primaryVariant)
 
-                Map(coordinateRegion: $mapRegion, annotationItems: markers) { marker in
-                    MapAnnotation(coordinate: marker.coordinate) {
-                        VStack {
-                            Circle()
-                                .fill(marker.color)
-                                .frame(width: 12, height: 12)
-                            Text(marker.label)
-                                .font(.caption2)
-                                .foregroundColor(marker.color)
-                        }
-                    }
-                }
+                PolylineMapView(
+                    region: mapRegion,
+                    markers: markers,
+                    route: routeCoordinates
+                )
                 .frame(maxHeight: .infinity)
 
                 if !showMarkArrived {
@@ -116,11 +109,12 @@ struct DriverDeliveryView: View {
                 getCoordinates(for: customerAddress) { customerCoord in
                     if let d = driverCoord, let r = restaurantCoord, let c = customerCoord {
                         markers = [
-                            Marker(coordinate: d, color: .blue, label: "Driver"),
-                            Marker(coordinate: r, color: .red, label: "Restaurant"),
-                            Marker(coordinate: c, color: .green, label: "Customer")
+                            Marker(coordinate: d, color: .blue, label: "Driver (Start)"),
+                            Marker(coordinate: r, color: .red, label: "Restaurant (First Stop)"),
+                            Marker(coordinate: c, color: .green, label: "Customer (Final Stop)")
                         ]
-                        mapRegion = MKCoordinateRegion(center: d, span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1))
+                        routeCoordinates = [d, r, c]
+                        mapRegion = MKCoordinateRegion(center: d, span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2))
                     } else {
                         showMessage = "Failed to get coordinates."
                     }
@@ -132,21 +126,17 @@ struct DriverDeliveryView: View {
     private func markOrderAsDelivered() {
         let now = ISO8601DateFormatter().string(from: Date())
         let ref = Database.database().reference().child("orders").child(orderId)
-
         ref.updateChildValues([
             "status": "delivered",
             "timestamps/delivered": now,
             "estimatedDeliveryTime": ""
         ])
-
         ref.child("updateLogs").childByAutoId().setValue([
             "timestamp": now,
             "status": "delivered",
             "note": "Status updated to delivered by driver."
         ])
-
         showMessage = "Order marked as delivered."
-
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             navigateToHome = true
         }

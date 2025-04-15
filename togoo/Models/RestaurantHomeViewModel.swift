@@ -107,33 +107,6 @@ class RestaurantHomeViewModel: ObservableObject {
         orderListeners[orderId] = handle
     }
 
-//    func updateOrderStatus(orderId: String, newStatus: String) {
-//        let now = ISO8601DateFormatter().string(from: Date())
-//        var updates: [String: Any] = [
-//            "status": newStatus,
-//            "updateLogs": [UUID().uuidString: [
-//                "status": newStatus,
-//                "note": "Status updated to \(newStatus) by restaurant.",
-//                "timestamp": now
-//            ]]
-//        ]
-//
-//        let timestampKey: String? = {
-//            switch newStatus {
-//            case "accepted": return "timestamps/restaurantAccepted"
-//            case "declined": return "timestamps/restaurantDeclined"
-//            case "preparing": return "timestamps/preparing"
-//            case "ready": return "timestamps/readyForPickup"
-//            default: return nil
-//            }
-//        }()
-//
-//        if let key = timestampKey {
-//            updates[key] = now
-//        }
-//
-//        db.child("orders").child(orderId).updateChildValues(updates)
-//    }
     
     func updateOrderStatus(orderId: String, newStatus: String) {
         let now = ISO8601DateFormatter().string(from: Date())

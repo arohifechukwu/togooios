@@ -6,6 +6,7 @@
 //
 
 
+
 import SwiftUI
 import FirebaseDatabase
 import FirebaseAuth
@@ -20,7 +21,6 @@ struct DriverHomeView: View {
     @State private var showMessage: String = ""
     @State private var destinationView: AnyView? = nil
     @State private var navigate = false
-    
 
     var body: some View {
         NavigationStack {
@@ -32,7 +32,6 @@ struct DriverHomeView: View {
                     .foregroundColor(.white)
                     .background(Color.primaryVariant)
                 
-                // 🧭 View Active Trip
                 if availability.lowercased() == "available", let activeOrderId = activeOrderId {
                     Button("View Active Trip") {
                         checkIfTripStillActive(for: activeOrderId)
@@ -41,14 +40,13 @@ struct DriverHomeView: View {
                     .padding()
                     .foregroundColor(.primaryVariant)
                 }
-                
+
                 if !showMessage.isEmpty {
                     Text(showMessage)
                         .foregroundColor(.red)
                         .padding(.bottom, 6)
                 }
-                
-                // 🟡 Availability Logic
+
                 if availability.lowercased() != "available" {
                     Text("Orders cannot be assigned while offline. Update your availability.")
                         .foregroundColor(.gray)
@@ -69,7 +67,9 @@ struct DriverHomeView: View {
                                         order: order,
                                         onAccept: {
                                             assignDriverToOrder(orderId: order.id, driver: driver)
-                                            navigateToDelivery = order.id
+                                            DispatchQueue.main.async {
+                                                navigateToDelivery = order.id
+                                            }
                                         },
                                         onDecline: {
                                             updateOrderStatus(orderId: order.id, status: "declined", note: "Declined by driver.")
@@ -81,9 +81,9 @@ struct DriverHomeView: View {
                         .padding(.top)
                     }
                 }
-                
+
                 Spacer()
-                
+
                 DriverBottomNavItem(selectedTab: "orders") { selected in
                     destinationView = selected
                     navigate = true
@@ -110,8 +110,7 @@ struct DriverHomeView: View {
             }
         }
     }
-    
-    // 🔄 Load Driver Info
+
     private func loadDriverInfo() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         let driverRef = Database.database().reference().child("driver").child(uid)
@@ -128,7 +127,6 @@ struct DriverHomeView: View {
         }
     }
 
-    // 📦 Load Available Orders
     private func loadOrders() {
         let ref = Database.database().reference().child("orders")
         ref.queryOrdered(byChild: "status").queryEqual(toValue: "ready").observe(.value) { snapshot in
@@ -145,7 +143,6 @@ struct DriverHomeView: View {
         }
     }
 
-    // 👀 Check if driver has an active trip
     private func checkActiveTrip() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         let activeRef = Database.database().reference().child("ordersByDriver").child(uid)
@@ -155,7 +152,7 @@ struct DriverHomeView: View {
             }
         }
     }
-    
+
     private func checkIfTripStillActive(for orderId: String) {
         let ref = Database.database().reference().child("orders").child(orderId)
         ref.observeSingleEvent(of: .value) { snapshot in
@@ -171,7 +168,6 @@ struct DriverHomeView: View {
         }
     }
 }
-
 
 #Preview {
     DriverHomeView()

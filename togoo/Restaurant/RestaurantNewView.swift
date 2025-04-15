@@ -216,7 +216,7 @@ struct RestaurantNewView: View {
                             messageColor = .red
                         } else {
                             message = "Food item added successfully"
-                            messageColor = .green
+                            messageColor = .red
                             clearFields()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                                 message = ""

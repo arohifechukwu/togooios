@@ -22,6 +22,9 @@ struct DisputeFormView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                Text("Dispute Form")
+                    .font(.title2)
+                    .bold()
                 TextField("Dispute Title", text: $disputeTitle)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                 TextField("Description", text: $disputeDescription)
@@ -32,6 +35,8 @@ struct DisputeFormView: View {
                 Button("Upload Image") {
                     showImagePicker = true
                 }
+                .tint(Color.primaryVariant)
+                
                 if let image = evidenceImage {
                     Image(uiImage: image)
                         .resizable()
@@ -44,6 +49,7 @@ struct DisputeFormView: View {
                     presentationMode.wrappedValue.dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(Color.primaryVariant)
             }
             .padding()
         }

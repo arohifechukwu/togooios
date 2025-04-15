@@ -97,15 +97,17 @@ struct OrderCardView: View {
             if let driverId = order.driverId, !driverId.isEmpty {
                 Button("Know Your Driver", action: onKnowDriver)
                     .buttonStyle(.borderedProminent)
+                    .tint(Color.primaryVariant)
             }
 
             if order.status == "delivered" {
                 Button("Rate Your Order", action: onRateOrder)
                     .buttonStyle(.borderedProminent)
+                    .tint(Color.primaryVariant)
 
                 Button("Log A Complaint", action: onLogComplaint)
                     .buttonStyle(.borderedProminent)
-                    .foregroundColor(.red)
+                    .tint(Color.primaryVariant)
             }
         }
         .padding()

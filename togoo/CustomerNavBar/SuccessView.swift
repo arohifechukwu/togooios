@@ -5,6 +5,7 @@
 //  Created by Ifechukwu Aroh on 2025-04-11.
 //
 
+
 import SwiftUI
 
 struct SuccessView: View {
@@ -12,70 +13,74 @@ struct SuccessView: View {
     @State private var navigateToHome = false
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 24) {
-                // ✅ Custom Back Button
-                HStack {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(Color.primaryVariant)
-                            .clipShape(Circle())
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal)
-                .padding(.top)
-
-                Spacer()
-
-                // ✅ Success Icon
-                Image("ic_checkbox")
-                    .resizable()
-                    .frame(width: 100, height: 100)
-                    .padding(.top, 20)
-
-                // ✅ Title
-                Text("Payment Confirmed")
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundColor(.black)
-
-                // ✅ Subtitle
-                Text("Your order has been placed successfully.\nWe'll notify you when it's on the way!")
-                    .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "#666666"))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
-                    .lineSpacing(6)
-
-                // ✅ Continue Shopping Button
+        VStack(spacing: 24) {
+            // ✅ Custom Header with Back Button
+            HStack {
                 Button(action: {
-                    navigateToHome = true
+                    dismiss()
                 }) {
-                    Text("Continue Shopping")
-                        .font(.system(size: 18, weight: .medium))
+                    Image(systemName: "chevron.left")
                         .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(hex: "F18D34"))
-                        .cornerRadius(12)
+                        .padding(8)
+                        .background(Color.primaryVariant)
+                        .clipShape(Circle())
                 }
-                .padding(.horizontal, 24)
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.top, 16)
+            .background(Color.primaryVariant)
+            .overlay(
+                Text("Order Success")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            )
+
+            Spacer()
+
+            // ✅ Success Icon
+            Image("ic_checkbox")
+                .resizable()
+                .frame(width: 100, height: 100)
                 .padding(.top, 20)
 
-                Spacer()
+            // ✅ Title
+            Text("Payment Confirmed")
+                .font(.system(size: 26, weight: .bold))
+                .foregroundColor(.black)
 
-                NavigationLink(destination: CustomerHomeView(), isActive: $navigateToHome) {
-                    EmptyView()
-                }
+            // ✅ Subtitle
+            Text("Your order has been placed successfully.\nWe'll notify you when it's on the way!")
+                .font(.system(size: 16))
+                .foregroundColor(Color(hex: "#666666"))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .lineSpacing(6)
+
+            // ✅ Continue Shopping Button
+            Button(action: {
+                navigateToHome = true
+            }) {
+                Text("Continue Shopping")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.primaryVariant)
+                    .cornerRadius(12)
             }
-            .padding(24)
-            .background(Color.white)
-            .navigationBarBackButtonHidden(true)
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+
+            Spacer()
+
+            NavigationLink(destination: CustomerHomeView(), isActive: $navigateToHome) {
+                EmptyView()
+            }
         }
+        .background(Color.white)
+        .navigationBarBackButtonHidden(true)
     }
 }
 

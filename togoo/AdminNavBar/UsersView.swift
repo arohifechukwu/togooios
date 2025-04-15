@@ -127,40 +127,6 @@ struct UsersView: View {
         }
     }
     
-    // MARK: - Fetch Users from Realtime Database
-    //    func fetchUsers() {
-    //        let dbRef = Database.database().reference()
-    //        var allUsers: [User] = []
-    //        let group = DispatchGroup()
-    //        let nodes = ["customer", "driver", "restaurant", "admin"]
-    //
-    //        for node in nodes {
-    //            group.enter()
-    //            dbRef.child(node).observeSingleEvent(of: .value) { snapshot in
-    //                for child in snapshot.children {
-    //                    if let snap = child as? DataSnapshot,
-    //                       let userData = snap.value as? [String: Any] {
-    //                        let user = User(
-    //                            userId: snap.key,
-    //                            name: userData["name"] as? String ?? "",
-    //                            email: userData["email"] as? String ?? "",
-    //                            role: node.capitalized,
-    //                            status: userData["status"] as? String ?? ""
-    //                        )
-    //                        allUsers.append(user)
-    //                    }
-    //                }
-    //                group.leave()
-    //            } withCancel: { _ in
-    //                group.leave()
-    //            }
-    //        }
-    //
-    //        group.notify(queue: .main) {
-    //            users = allUsers
-    //        }
-    //    }
-    //}
     
     func fetchUsers() {
         let dbRef = Database.database().reference()

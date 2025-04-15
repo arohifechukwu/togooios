@@ -1,3 +1,10 @@
+//
+//  RestaurantPageView.swift
+//  togoo
+//
+//  Created by Ifechukwu Aroh on 2025-04-10.
+//
+
 import SwiftUI
 import FirebaseDatabase
 import FirebaseAuth
@@ -358,3 +365,5 @@ struct RestaurantPageView: View {
 #Preview {
     RestaurantPageView(restaurantId: "sampleRestaurantId")
 }
+
+
